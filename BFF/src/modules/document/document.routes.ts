@@ -1,13 +1,13 @@
 import { Router } from "express";
-import { upload } from "../../middlewares/upload";
-import { uploadDocument } from "./document.controller";
+import { upload } from "../../middlewares/upload.js";
+import { uploadResume } from "./document.controller.js";
 
 const router = Router();
 
 router.post(
   "/",
   upload.single("file"),
-  uploadDocument
+  uploadResume
 );
 
 export default router;
