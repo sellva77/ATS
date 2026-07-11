@@ -1,2 +1,6 @@
 fastapi
-uvicorn
+uvicorn[standard]
+pymupdf
+minio
+python-dotenv
+pydantic

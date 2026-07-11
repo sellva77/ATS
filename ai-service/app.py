@@ -1,9 +1,18 @@
 from fastapi import FastAPI
+from api.routes import router
 
-app = FastAPI(title="ATS AI Service")
+app = FastAPI(
+    title="ATS AI Service",
+    version="1.0.0",
+)
 
-@app.get("/health")
-def health():
+app.include_router(router)
+
+
+@app.get("/")
+def root():
     return {
-        "status": "ok"
+        "service": "ATS AI Service",
+        "status": "running",
+        "version": "1.0.0"
     }

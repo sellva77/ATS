@@ -1,10 +1,7 @@
-
-
 services:
   postgres:
     image: postgres:17
     container_name: ats-postgres
-
     restart: unless-stopped
 
     environment:
@@ -20,7 +17,6 @@ services:
 
   minio:
     image: minio/minio
-
     container_name: ats-minio
 
     command: server /data --console-address ":9001"
@@ -41,16 +37,19 @@ services:
   ai-service:
     build:
       context: ../ai-service
-
-    container_name: ats-ai
-
-    restart: unless-stopped
+    container_name: ats-ai-service
 
     ports:
       - "8000:8000"
 
+    env_file:
+      - ../ai-service/.env
+    command: uvicorn app:app --host 0.0.0.0 --port 8000 --reload
+
+    volumes:
+      - ../ai-service:/app
+
     depends_on:
-      - postgres
       - minio
 
 volumes:
