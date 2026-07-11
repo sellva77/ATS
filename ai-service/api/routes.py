@@ -26,5 +26,9 @@ def parse_resume_route(request: ParseResumeRequest):
     return ParseResumeResponse(
         success=True,
         candidate=result["candidate"],
+        skills=result["skills"],
+        experience=result["experience"],
+        education=result["education"],
+        projects=result["projects"],
         rawText=result["rawText"],
     )

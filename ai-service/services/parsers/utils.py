@@ -75,3 +75,35 @@ def find_location(text: str) -> str | None:
         return match.group(0)
 
     return None
+
+
+
+
+DATE_RANGE_PATTERN = re.compile(
+    r"""
+    (?P<start>
+        (?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Sept|Oct|Nov|Dec)
+        \.?
+        \s+
+        \d{4}
+        |
+        \d{4}
+    )
+    \s*
+    [–—-]
+    \s*
+    (?P<end>
+        Present
+        |
+        Current
+        |
+        (?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Sept|Oct|Nov|Dec)
+        \.?
+        \s+
+        \d{4}
+        |
+        \d{4}
+    )
+    """,
+    re.IGNORECASE | re.VERBOSE,
+)

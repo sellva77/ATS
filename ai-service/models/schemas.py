@@ -17,4 +17,8 @@ class Candidate(BaseModel):
 class ParseResumeResponse(BaseModel):
     success: bool
     candidate: Candidate
+    education: list[dict]
+    experience: list[dict]
+    skills: list[str]
+    projects: list[dict]
     rawText: str
