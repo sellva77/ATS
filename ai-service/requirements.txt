@@ -4,3 +4,4 @@ pymupdf
 minio
 python-dotenv
 pydantic
+google-genai

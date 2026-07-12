@@ -1,0 +1,129 @@
+{
+    "skills": [
+        "JavaScript",
+        "Python",
+        "Go (Learning)",
+        "SQL",
+        "React.js",
+        "HTML5",
+        "CSS3",
+        "Material UI",
+        "Node.js",
+        "Express.js",
+        "REST APIs",
+        "PostgreSQL",
+        "MongoDB",
+        "MySQL",
+        "Git",
+        "GitHub",
+        "Docker",
+        "Linux",
+        "PM2",
+        "Postman",
+        "Object-Oriented Programming (OOP)",
+        "Data Structures & Algorithms",
+        "Problem Solving"
+    ],
+    "projects": [
+        {
+            "name": "Visitor Management System",
+            "description": [
+                "Built a full-stack visitor management application to log, track, and manage visitor entries and approvals",
+                "Designed REST APIs with Node.js and Express.js and modeled visitor/user data in PostgreSQL",
+                "Implemented a responsive React.js front end for front-desk staff to register and search visitor records"
+            ],
+            "technologies": [
+                "React.js",
+                "Node.js",
+                "Express.js",
+                "PostgreSQL"
+            ]
+        },
+        {
+            "name": "Krishi",
+            "description": [
+                "Built a web application aimed at supporting farmers with agriculture-related information and tools",
+                "Developed backend APIs with Node.js/Express.js and designed the MySQL schema for core data models",
+                "Implemented the React.js front end, focused on a simple, accessible user experience"
+            ],
+            "technologies": [
+                "React.js",
+                "Node.js",
+                "Express.js",
+                "MySQL"
+            ]
+        },
+        {
+            "name": "Vega Intellisoft Company Website",
+            "description": [
+                "Built the company's official website, translating design mockups into responsive React.js pages",
+                "Optimized page load performance and ensured cross-browser and mobile responsiveness"
+            ],
+            "technologies": [
+                "React.js",
+                "Node.js"
+            ]
+        },
+        {
+            "name": "FinanceFlow",
+            "description": [
+                "Built a full-stack finance management application with a React.js client and Node.js/Express.js server",
+                "Implemented user authentication and authorization to secure access to personal financial data",
+                "Designed the PostgreSQL database schema and built REST APIs to manage transactions and accounts"
+            ],
+            "technologies": [
+                "React.js",
+                "Node.js",
+                "Express.js",
+                "PostgreSQL"
+            ]
+        },
+        {
+            "name": "Rider",
+            "description": [
+                "Built a full-stack ride-related application with a client/server architecture, separating the React.js front end from the Node.js/Express.js backend",
+                "Designed REST APIs and a MySQL schema to support core application data and workflows"
+            ],
+            "technologies": [
+                "React.js",
+                "Node.js",
+                "Express.js",
+                "MySQL"
+            ]
+        }
+    ],
+    "candidate": {
+        "name": "SELVAKANI M",
+        "email": "sellva204@gmail.com",
+        "phone": "9342766482",
+        "github": "github.com/sellva77",
+        "linkedin": "linkedin.com/in/selva-kani",
+        "location": "Chennai, India"
+    },
+    "education": [
+        {
+            "degree": "B.Sc. Computer Science",
+            "endDate": "2025",
+            "location": "Madurai, India",
+            "startDate": "2022",
+            "institution": "Madurai Kamaraj University"
+        }
+    ],
+    "experience": [
+        {
+            "title": "Junior Web / Software Developer",
+            "company": "Vega Intellisoft",
+            "endDate": "Present",
+            "location": "Chennai, India",
+            "startDate": "Aug. 2025",
+            "description": [
+                "Developed and maintained front-end features using React.js, building reusable components for internal and client-facing web applications",
+                "Built and integrated RESTful APIs with Node.js and Express.js to support core application functionality",
+                "Designed and queried relational databases in PostgreSQL and MySQL to support application data needs",
+                "Deployed and maintained applications on Linux (Ubuntu) servers using Docker for containerization",
+                "Used Git for version control, collaborating with the team through code reviews and pull requests",
+                "Debugged and resolved production issues, contributing to improved application stability"
+            ]
+        }
+    ]
+}

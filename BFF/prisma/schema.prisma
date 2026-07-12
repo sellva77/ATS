@@ -8,19 +8,21 @@ datasource db {
 }
 
 model ResumeDocument {
-  id            String         @id @default(uuid())
+  id           String         @id @default(uuid())
 
-  bucket        String
-  objectKey     String         @unique
+  bucket       String
+  objectKey    String         @unique
 
-  originalName  String
-  mimeType      String
-  fileSize      BigInt
+  originalName String
+  mimeType     String
+  fileSize     BigInt
 
-  status        DocumentStatus @default(UPLOADED)
+  status       DocumentStatus @default(UPLOADED)
 
-  createdAt     DateTime       @default(now())
-  updatedAt     DateTime       @updatedAt
+  profile      CandidateProfile?
+
+  createdAt    DateTime       @default(now())
+  updatedAt    DateTime       @updatedAt
 }
 
 enum DocumentStatus {
@@ -28,4 +30,18 @@ enum DocumentStatus {
   PROCESSING
   PARSED
   FAILED
+}
+
+model CandidateProfile {
+  id         String @id @default(uuid())
+  documentId String @unique
+
+  profile Json
+  rawText String?
+  version Int @default(1)
+
+  document ResumeDocument @relation(fields: [documentId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }

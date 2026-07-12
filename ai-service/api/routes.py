@@ -19,16 +19,18 @@ def health():
     "/parse-resume",
     response_model=ParseResumeResponse,
 )
-def parse_resume_route(request: ParseResumeRequest):
+async def parse_resume_route(request: ParseResumeRequest):
 
-    result = parse_resume(request.objectKey)
+    result = await parse_resume(request.objectKey)
 
     return ParseResumeResponse(
         success=True,
-        candidate=result["candidate"],
-        skills=result["skills"],
-        experience=result["experience"],
-        education=result["education"],
-        projects=result["projects"],
+        profile=result["profile"],
+        # candidate=result["candidate"],
+        # profile=result["profile"],
+        # skills=result["skills"],
+        # experience=result["experience"],
+        # education=result["education"],
+        # projects=result["projects"],
         rawText=result["rawText"],
     )

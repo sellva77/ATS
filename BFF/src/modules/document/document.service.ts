@@ -1,7 +1,7 @@
 import crypto from "crypto";
 import { prisma } from "../../config/prisma.js";
 import { minio } from "../../config/minio.js";
-
+import { profileResume } from "../profile.service.js";
 export async function uploadResume(file: Express.Multer.File) {
   const bucket = process.env.MINIO_BUCKET || "ats-resumes";
   const ext = file.originalname.substring(file.originalname.lastIndexOf("."));
@@ -24,7 +24,7 @@ export async function uploadResume(file: Express.Multer.File) {
         status: "UPLOADED",
       },
     });
-
+    await profileResume(document.id, document.objectKey);
     return document;
   } catch (error) {
     // Clean up MinIO if database insert fails
@@ -33,4 +33,5 @@ export async function uploadResume(file: Express.Multer.File) {
     throw error;
   }
 }
+
 
