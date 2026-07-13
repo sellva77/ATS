@@ -25,4 +25,4 @@ def download_pdf(object_key: str) -> bytes:
         return response.read()
     finally:
         response.close()
-        response.release_conn() 
+        response.release_conn()

@@ -1,6 +1,6 @@
 import json
 
-from services.LLMProvider.GeminiProvider import GeminiProvider
+from services.llm import GeminiProvider
 
 
 provider = GeminiProvider()

@@ -1,3 +1,4 @@
+# pyrefly: ignore [missing-import]
 from pydantic import BaseModel
 
 
@@ -16,10 +17,13 @@ class Candidate(BaseModel):
 
 class ParseResumeResponse(BaseModel):
     success: bool
-    # candidate: Candidate
     profile: dict
-    # education: list[dict]
-    # experience: list[dict]
-    # skills: list[str]
-    # projects: list[dict]
     rawText: str
+    
+class CandidateIndexRequest(BaseModel):
+    candidateId: str
+    profile: dict
+    
+class CandidateSearchRequest(BaseModel):
+    jobDescription: str
+    limit: int = 10

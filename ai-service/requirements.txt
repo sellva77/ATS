@@ -5,3 +5,5 @@ minio
 python-dotenv
 pydantic
 google-genai
+sentence-transformers
+qdrant-client

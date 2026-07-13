@@ -1,4 +1,4 @@
-# Text extraction service (e.g., PyMuPDF)
+# Text extraction service (PyMuPDF)
 
 import fitz  # PyMuPDF
 
@@ -11,6 +11,3 @@ def extract_text(pdf_bytes: bytes) -> str:
             text += page.get_text()
 
     return text.strip()
-
-# def extract_text(pdf_bytes: bytes) -> str:
-#     return "hello.."

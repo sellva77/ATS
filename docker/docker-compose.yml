@@ -33,6 +33,15 @@ services:
 
     volumes:
       - minio_data:/data
+  qdrant:
+    image: qdrant/qdrant:latest
+    container_name: ats-qdrant
+    restart: unless-stopped
+    ports:
+      - "6333:6333"
+      - "6334:6334"
+    volumes:
+      - qdrant_data:/qdrant/storage
 
   ai-service:
     build:
@@ -51,7 +60,9 @@ services:
 
     depends_on:
       - minio
+      - qdrant
 
 volumes:
   postgres_data:
   minio_data:
+  qdrant_data:

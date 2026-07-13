@@ -1,4 +1,6 @@
-# Utility functions for parsing
+# Regex-based extraction utilities for resume text.
+# These can be used as fallbacks or validation alongside LLM profiling.
+
 import re
 
 
@@ -36,10 +38,8 @@ def find_linkedin(text: str) -> str | None:
     return match.group(0) if match else None
 
 
-
 def find_name(text: str) -> str | None:
     for line in text.splitlines():
-
         line = line.strip()
 
         if not line:
@@ -62,7 +62,6 @@ def find_name(text: str) -> str | None:
     return None
 
 
-
 def find_location(text: str) -> str | None:
     header = "\n".join(text.splitlines()[:10])
 
@@ -75,8 +74,6 @@ def find_location(text: str) -> str | None:
         return match.group(0)
 
     return None
-
-
 
 
 DATE_RANGE_PATTERN = re.compile(

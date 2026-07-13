@@ -1,8 +1,19 @@
 import { Router } from "express";
-import documentRoutes from "../modules/document/document.routes.js";
+import { upload } from "../middlewares/upload.js";
+import { uploadResume } from "../controllers/uploadeDoc.js";
+import { searchCandidates } from "../controllers/searchCandidate.js";
 
 const router = Router();
 
-router.use("/documents", documentRoutes);
+router.post(
+  "/resume-pipeline",
+  upload.single("file"),
+  uploadResume
+);
+
+router.post(
+  "/search-candidates",
+  searchCandidates
+);
 
 export default router;
