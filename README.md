@@ -1,12 +1,12 @@
 # ATS — AI-Powered Applicant Tracking System
 
-An AI-powered Applicant Tracking System designed to store, parse, and structure candidate resumes for future intelligent recruitment workflows.
+An AI-powered Applicant Tracking System designed to ingest, structure, index, and retrieve candidate profiles for intelligent recruitment workflows.
 
-The project is being built as a modular system with separate API, AI processing, storage, and database layers.
+The project is built as a modular system with separate API orchestration, AI processing, object storage, relational data storage, and vector search layers.
 
 ## Current Status
 
-The core resume processing flow is implemented.
+The core candidate ingestion and semantic retrieval pipeline is implemented.
 
 ```text
 Resume Upload
@@ -15,25 +15,351 @@ BFF API
       ↓
 MinIO Object Storage
       ↓
-PostgreSQL Metadata Storage
+PostgreSQL Document Metadata
       ↓
 AI Service
       ↓
 PDF Text Extraction
       ↓
-Candidate Information Parsing
+LLM-Assisted Candidate Profiling
+      ↓
+PostgreSQL Candidate Profile
+      ↓
+Candidate Index Builder
+      ↓
+BGE Embedding Generation
+      ↓
+Qdrant Vector Database
 ```
 
-Currently extracted candidate information includes:
+Candidate profiles can now be semantically retrieved and ranked against a job description.
 
-* Name
-* Email
-* Phone number
-* GitHub profile
-* LinkedIn profile
-* Location
+```text
+Job Description
+      ↓
+Embedding Generation
+      ↓
+Qdrant Vector Search
+      ↓
+Similarity Threshold
+      ↓
+Ranked Relevant Candidates
+```
 
-The project is currently focused on building the core ATS infrastructure before adding advanced matching, ranking, and AI recruitment features.
+The current implementation establishes the core retrieval infrastructure required for future candidate-job matching and ranking features.
+
+## Implemented Core Features
+
+### Resume Ingestion
+
+The BFF accepts candidate resumes using multipart form data.
+
+Uploaded resume documents are stored in MinIO using generated object keys while preserving the original file extension.
+
+Document metadata is stored in PostgreSQL.
+
+### Resume Text Extraction
+
+The AI service retrieves resume documents directly from MinIO and extracts raw text from PDF files.
+
+### Generalized Candidate Profiling
+
+Extracted resume text is processed into a generalized structured candidate profile.
+
+The extraction system is designed for resumes across different industries and is not limited to software developers.
+
+The current candidate profile structure supports:
+
+* Candidate basic information
+* Summary
+* Work experience
+* Education
+* Skills
+* Certifications
+* Licenses
+* Languages
+* Achievements
+* Projects
+* Publications
+* Awards
+* Volunteer experience
+* Other resume sections
+
+The extraction layer follows strict data extraction rules and is designed to avoid resume rewriting, skill inference, title normalization, and factual invention.
+
+### Candidate Profile Storage
+
+Structured candidate profiles are stored in PostgreSQL using JSON data.
+
+PostgreSQL acts as the source of truth for candidate information.
+
+The original extracted resume text is also preserved.
+
+### Candidate Semantic Indexing
+
+Candidate profiles are transformed into semantic indexing text using relevant resume information such as:
+
+* Work roles
+* Organizations
+* Experience descriptions
+* Skills
+* Projects
+* Project descriptions
+* Project skills
+
+The generated candidate representation is converted into a vector embedding.
+
+The current embedding model produces a 384-dimensional normalized vector.
+
+### Vector Storage
+
+Candidate embeddings are stored in Qdrant.
+
+Each vector is associated with the candidate profile ID and searchable metadata.
+
+Current vector metadata includes:
+
+* Candidate location
+* Candidate skills
+
+Qdrant is used as the semantic retrieval layer and is not the primary candidate data store.
+
+### Candidate Search
+
+Job descriptions are converted into embeddings using the same embedding model used for candidate indexing.
+
+Qdrant performs semantic similarity search against indexed candidate profiles.
+
+Search results contain:
+
+* Candidate ID
+* Semantic similarity score
+* Candidate metadata
+
+A similarity threshold is used during retrieval to remove weak semantic matches.
+
+The search engine currently acts as a candidate retrieval system.
+
+Semantic similarity is not treated as the final candidate qualification score.
+
+## Current Architecture
+
+```text
+                         Client
+                            │
+                            ▼
+                     BFF API Service
+                       Node.js
+                       TypeScript
+                       Express.js
+                            │
+             ┌──────────────┼──────────────┐
+             │              │              │
+             ▼              ▼              ▼
+         PostgreSQL       MinIO       AI Service
+       Source of Truth   Documents       Python
+                                           │
+                           ┌───────────────┼───────────────┐
+                           │               │               │
+                           ▼               ▼               ▼
+                    PDF Extraction   LLM Profiling    BGE Embedding
+                                                           │
+                                                           ▼
+                                                        Qdrant
+                                                   Semantic Vector Index
+```
+
+## Core Resume Pipeline
+
+The complete resume processing flow is exposed through the BFF.
+
+```text
+POST /api/v1/resume-pipeline
+```
+
+The request accepts a resume file using multipart form data.
+
+```text
+file → PDF Resume
+```
+
+Processing flow:
+
+1. The BFF receives the resume.
+2. A unique object key is generated.
+3. The original resume is uploaded to MinIO.
+4. A `ResumeDocument` record is created in PostgreSQL.
+5. The document status is changed to `PROCESSING`.
+6. The AI service downloads the resume from MinIO.
+7. Raw PDF text is extracted.
+8. The resume is converted into a structured candidate profile.
+9. The candidate profile and raw resume text are stored in PostgreSQL.
+10. Candidate semantic indexing text is generated.
+11. A 384-dimensional embedding is generated.
+12. The candidate vector is stored in Qdrant.
+13. The document status is changed to `PARSED`.
+
+Successful response:
+
+```json
+{
+  "success": true,
+  "documentId": "document-uuid",
+  "candidateId": "candidate-uuid",
+  "status": "PARSED",
+  "indexed": true
+}
+```
+
+If the processing pipeline fails after document creation, the document status is changed to `FAILED`.
+
+## Candidate Search Flow
+
+Candidate semantic search is exposed through the BFF.
+
+```text
+POST /api/v1/search-candidates
+```
+
+Example request:
+
+```json
+{
+  "jobDescription": "We are hiring a Flutter Developer to build and maintain cross-platform mobile applications using Flutter and Dart. The candidate should have experience with REST APIs, Firebase, state management, and Android application development.",
+  "limit": 10
+}
+```
+
+Search flow:
+
+```text
+Job Description
+      ↓
+BGE Embedding
+      ↓
+384-Dimensional Vector
+      ↓
+Qdrant Candidate Collection
+      ↓
+Cosine Similarity Search
+      ↓
+Similarity Threshold
+      ↓
+Ranked Candidates
+```
+
+Example response:
+
+```json
+{
+  "success": true,
+  "count": 1,
+  "candidates": [
+    {
+      "candidateId": "candidate-uuid",
+      "score": 0.79685944,
+      "metadata": {
+        "location": "Chennai, India",
+        "skills": [
+          "Flutter (Dart)",
+          "Dart",
+          "Android",
+          "iOS",
+          "Firebase"
+        ]
+      }
+    }
+  ]
+}
+```
+
+## Data Storage Strategy
+
+The ATS intentionally uses different storage systems for different responsibilities.
+
+### PostgreSQL
+
+PostgreSQL is the source of truth.
+
+It stores:
+
+* Resume document metadata
+* Candidate structured profiles
+* Original extracted resume text
+* Processing status
+* Profile version information
+
+### MinIO
+
+MinIO stores original candidate documents.
+
+It is responsible for:
+
+* Resume PDF storage
+* Object key management
+* Document retrieval by the AI service
+
+### Qdrant
+
+Qdrant stores semantic candidate indexes.
+
+It is responsible for:
+
+* Candidate embeddings
+* Semantic similarity search
+* Candidate retrieval
+* Search metadata
+
+Qdrant does not replace PostgreSQL.
+
+```text
+PostgreSQL = Candidate Truth
+Qdrant     = Candidate Retrieval Index
+MinIO      = Original Documents
+```
+
+## Database Models
+
+### ResumeDocument
+
+Stores document metadata and processing state.
+
+```text
+id
+bucket
+objectKey
+originalName
+mimeType
+fileSize
+status
+createdAt
+updatedAt
+```
+
+Supported document states:
+
+```text
+UPLOADED
+PROCESSING
+PARSED
+FAILED
+```
+
+### CandidateProfile
+
+Stores the structured candidate representation.
+
+```text
+id
+documentId
+profile
+rawText
+version
+createdAt
+updatedAt
+```
+
+The `profile` field uses PostgreSQL JSON storage to support generalized candidate profiles without forcing industry-specific relational schemas.
 
 ## Tech Stack
 
@@ -43,21 +369,29 @@ The project is currently focused on building the core ATS infrastructure before 
 * TypeScript
 * Express.js
 * Prisma ORM
+* Axios
+* Multer
 
 ### AI Service
 
 * Python
+* FastAPI
 * PDF text extraction
-* Resume parsing
-* LLM-assisted structured candidate extraction
+* LLM-assisted structured extraction
+* Sentence Transformers
+* BGE embedding model
 
-### Database
+### Relational Database
 
 * PostgreSQL
 
 ### Object Storage
 
 * MinIO
+
+### Vector Database
+
+* Qdrant
 
 ### Infrastructure
 
@@ -70,181 +404,184 @@ The project is currently focused on building the core ATS infrastructure before 
 ATS/
 │
 ├── ai-service/
-│   └── app/
-│       ├── api/
-│       │   └── routes.py
-│       │
-│       ├── models/
-│       │   └── schemas.py
-│       │
-│       ├── services/
-│       │   ├── extractor.py
-│       │   ├── parser.py
-│       │   └── storage.py
-│       │
-│       └── utils/
-│           └── config.py
+│   ├── api/
+│   │   └── routes.py
+│   │
+│   ├── models/
+│   │   └── schemas.py
+│   │
+│   ├── services/
+│   │   ├── candidate/
+│   │   │   ├── index_builder.py
+│   │   │   └── search.py
+│   │   │
+│   │   ├── llm/
+│   │   │   └── gemini.py
+│   │   │
+│   │   ├── resume/
+│   │   │   ├── extractor.py
+│   │   │   ├── pipeline.py
+│   │   │   ├── profiler.py
+│   │   │   └── regex_utils.py
+│   │   │
+│   │   ├── embedding.py
+│   │   └── vector_store.py
+│   │
+│   ├── storage/
+│   │   └── minio_client.py
+│   │
+│   ├── utils/
+│   │   └── config.py
+│   │
+│   ├── app.py
+│   ├── Dockerfile
+│   └── requirements.txt
 │
-├── bff/
+├── BFF/
 │   ├── prisma/
+│   │   ├── migrations/
 │   │   └── schema.prisma
 │   │
-│   └── src/
-│       ├── config/
-│       │   ├── minio.ts
-│       │   └── prisma.ts
-│       │
-│       ├── controllers/
-│       │   └── document.controller.ts
-│       │
-│       ├── middleware/
-│       │   └── upload.middleware.ts
-│       │
-│       ├── services/
-│       │   └── document.service.ts
-│       │
-│       └── server.ts
+│   ├── src/
+│   │   ├── config/
+│   │   │   ├── minio.ts
+│   │   │   └── prisma.ts
+│   │   │
+│   │   ├── controllers/
+│   │   │   ├── uploadedDoc.ts
+│   │   │   └── searchCandidate.ts
+│   │   │
+│   │   ├── middlewares/
+│   │   │   ├── errorHandler.ts
+│   │   │   └── upload.ts
+│   │   │
+│   │   ├── routes/
+│   │   │   ├── health.ts
+│   │   │   └── index.ts
+│   │   │
+│   │   ├── app.ts
+│   │   └── server.ts
+│   │
+│   ├── prisma.config.ts
+│   ├── package.json
+│   └── tsconfig.json
 │
-├── client/
+├── database/
 │
-├── docker-compose.yml
+├── doc/
+│
+├── docker/
+│   └── docker-compose.yml
 │
 └── README.md
 ```
 
-## Directory Explanation
+## Service Responsibilities
 
-### `ai-service`
+### BFF
 
-The AI processing service responsible for resume extraction and candidate information parsing.
+The BFF is the public API entry point for the ATS.
 
-#### `app/api`
+Responsibilities include:
 
-Contains the HTTP API routes exposed by the AI service.
+* HTTP request handling
+* Resume upload handling
+* Pipeline orchestration
+* PostgreSQL communication
+* MinIO communication
+* AI service communication
+* API response handling
 
-`routes.py` handles resume parsing requests and coordinates the AI processing flow.
+Clients communicate with the BFF rather than directly accessing the internal AI service.
 
-#### `app/models`
+### AI Service
 
-Contains structured data models used by the AI service.
+The AI service contains resume intelligence and semantic retrieval functionality.
 
-`schemas.py` defines the candidate and resume response structures.
+Responsibilities include:
 
-#### `app/services`
+* Resume document retrieval
+* PDF text extraction
+* Candidate profile extraction
+* Candidate index text generation
+* Embedding generation
+* Qdrant vector indexing
+* Semantic candidate search
 
-Contains the core AI service business logic.
+The AI service is treated as an internal service.
 
-`storage.py`
+### PostgreSQL
 
-Downloads resume files from MinIO object storage.
+PostgreSQL stores authoritative ATS data.
 
-`extractor.py`
+Candidate profile information in PostgreSQL can be used to rebuild semantic indexes if the Qdrant collection is removed or recreated.
 
-Extracts raw text from PDF resume files.
+### Qdrant
 
-`parser.py`
+Qdrant acts as the high-speed semantic candidate retrieval index.
 
-Parses extracted resume text and converts it into structured candidate information.
-
-#### `app/utils`
-
-Contains shared configuration and utility logic.
-
-`config.py` manages service configuration and environment variables.
-
----
-
-### `bff`
-
-The Backend-for-Frontend API service.
-
-The BFF acts as the main entry point between the client application, storage layer, database, and AI service.
-
-#### `prisma`
-
-Contains the Prisma database schema and database configuration.
-
-`schema.prisma` defines the PostgreSQL data models used by the ATS.
-
-#### `src/config`
-
-Contains infrastructure configuration.
-
-`minio.ts`
-
-Creates and configures the MinIO client used for resume object storage.
-
-`prisma.ts`
-
-Creates the Prisma client used to communicate with PostgreSQL.
-
-#### `src/controllers`
-
-Contains HTTP request and response handling.
-
-`document.controller.ts` receives resume upload requests and delegates processing to the document service.
-
-Controllers are intentionally kept thin. Business logic is handled inside the service layer.
-
-#### `src/middleware`
-
-Contains Express middleware.
-
-`upload.middleware.ts` handles resume file uploads using multipart form data.
-
-#### `src/services`
-
-Contains application business logic.
-
-`document.service.ts` is responsible for:
-
-* Generating a unique object key
-* Preserving the original file extension
-* Uploading the resume buffer to MinIO
-* Saving document metadata to PostgreSQL
-* Handling storage and database consistency
-
-#### `server.ts`
-
-The entry point of the BFF service.
-
-It initializes the Express application, middleware, routes, and HTTP server.
-
----
-
-### `client`
-
-Reserved for the ATS frontend application.
-
-The frontend will provide the recruitment dashboard and candidate management interface.
-
----
-
-### `docker-compose.yml`
-
-Defines the local ATS infrastructure and service dependencies.
-
-The development environment includes:
-
-* PostgreSQL
-* MinIO
-* ATS services
-
-Docker Compose is used to provide a reproducible local development environment.
+The current `candidates` collection stores 384-dimensional normalized candidate embeddings.
 
 ## Current Core Feature
 
-The current implemented workflow is resume ingestion and parsing.
+The current implemented core feature is:
 
-When a resume is uploaded:
+```text
+Resume → Candidate Profile → Semantic Candidate Index → JD Search
+```
 
-1. The BFF receives the PDF file.
-2. A unique object key is generated.
-3. The resume is uploaded to MinIO.
-4. Resume metadata is stored in PostgreSQL.
-5. The AI service downloads the resume from MinIO.
-6. PDF text is extracted.
-7. Candidate information is parsed into structured data.
+The system can now:
+
+1. Accept a candidate resume.
+2. Store the original document.
+3. Extract resume text.
+4. Build a generalized structured candidate profile.
+5. Preserve candidate truth in PostgreSQL.
+6. Generate a semantic candidate representation.
+7. Generate a candidate embedding.
+8. Store the vector in Qdrant.
+9. Convert a job description into an embedding.
+10. Retrieve and rank semantically relevant candidates.
+
+## Current Limitation
+
+The current candidate search score represents semantic similarity.
+
+```text
+Semantic Similarity ≠ Candidate Qualification
+```
+
+For example, candidates with general software engineering experience may receive moderate similarity scores for specialized technical roles because of overlapping concepts such as APIs, architecture, databases, deployment, and version control.
+
+Qdrant is therefore used as a candidate retrieval engine rather than the final matching judge.
+
+## Next Core Feature
+
+The next major module is the Job Description Matching Engine.
+
+Planned flow:
+
+```text
+Job Description
+      ↓
+JD Requirement Extraction
+      ↓
+Semantic Candidate Retrieval
+      ↓
+Top Candidate Pool
+      ↓
+Hard Requirement Matching
+      ↓
+Skill Matching
+      ↓
+Experience Matching
+      ↓
+Weighted Scoring
+      ↓
+Final Candidate Ranking
+```
+
+The matching engine will evaluate candidate qualification separately from semantic similarity.
 
 ## Planned MVP Modules
 
@@ -258,17 +595,43 @@ The ATS architecture is designed around the following domains:
 * Interview Management
 * Document Management
 * AI Services
+* Candidate Retrieval
+* Job Matching
+* Candidate Ranking
 
-Future AI capabilities will include candidate-job matching, candidate ranking, intelligent search, and recruitment automation.
+Future capabilities may include:
+
+* JD requirement extraction
+* Deterministic candidate scoring
+* Candidate ranking
+* Skill gap analysis
+* Intelligent recruiter search
+* Interview automation
+* Recruitment workflow automation
 
 ## Project Goal
 
-The goal of this project is to build a scalable ATS foundation where traditional recruitment workflows and AI processing are separated into clear service boundaries.
+The goal of this project is to build a scalable AI-powered ATS foundation where traditional recruitment data, document storage, AI processing, and semantic retrieval are separated into clear architectural boundaries.
 
-The initial focus is infrastructure and core resume processing rather than building all recruitment features at once.
+The project currently focuses on building and validating the core candidate intelligence infrastructure before introducing broader recruitment workflow features.
 
 ## Development Status
 
 🚧 Active Development
 
-The current implementation is an MVP and the architecture may evolve as additional ATS modules are introduced.
+### Current Milestone
+
+✅ Resume document storage  
+✅ Resume text extraction  
+✅ Generalized candidate profiling  
+✅ Candidate profile persistence  
+✅ Candidate embedding generation  
+✅ Qdrant vector indexing  
+✅ Semantic JD candidate retrieval  
+✅ Similarity-based candidate ranking  
+
+### Next Milestone
+
+🚧 JD Requirement Extraction and Candidate Matching Engine
+
+The architecture and implementation may continue to evolve as additional ATS modules are introduced.
