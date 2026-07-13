@@ -61,3 +61,21 @@ docker-compose.override.yml
 .DS_Store
 Thumbs.db
 ehthumbs.db
+
+# -----------------------------
+# Vite / Client
+# -----------------------------
+dist-ssr
+*.local
+logs
+lerna-debug.log*
+
+# -----------------------------
+# IDE Extensions
+# -----------------------------
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+!.vscode/extensions.json

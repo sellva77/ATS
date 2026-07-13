@@ -1,3 +1,4 @@
+# pyrefly: ignore [missing-import]
 from minio import Minio
 
 from utils.config import (
