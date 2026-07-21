@@ -1,0 +1,134 @@
+import { useState, useCallback } from "react";
+import { PageHeader } from "../components/layout/PageHeader";
+import { SearchForm } from "../components/search/SearchForm";
+import { CandidateCard } from "../components/search/CandidateCard";
+import { searchCandidates } from "../api/client";
+import { showToast } from "../components/common/Toast";
+import { generateCandidateReport } from "../utils/generateReport";
+import type { CandidateResult } from "../types";
+
+export function SearchPage() {
+  const [isSearching, setIsSearching] = useState(false);
+  const [candidates, setCandidates] = useState<CandidateResult[]>([]);
+  const [hasSearched, setHasSearched] = useState(false);
+  const [lastJobDescription, setLastJobDescription] = useState("");
+
+  const handleSearch = useCallback(
+    async (jobDescription: string, limit: number) => {
+      setIsSearching(true);
+      setCandidates([]);
+      setHasSearched(false);
+      setLastJobDescription(jobDescription);
+
+      try {
+        const response = await searchCandidates(jobDescription, limit);
+        setCandidates(response.candidates);
+        setHasSearched(true);
+
+        if (response.count > 0) {
+          showToast(
+            "success",
+            `Found ${response.count} matching candidate${response.count === 1 ? "" : "s"}`
+          );
+        } else {
+          showToast("info", "No candidates matched the given job description");
+        }
+      } catch (err: any) {
+        showToast("error", err.message || "Search failed");
+        setHasSearched(true);
+      } finally {
+        setIsSearching(false);
+      }
+    },
+    []
+  );
+
+  return (
+    <>
+      <PageHeader
+        icon="🔍"
+        title="Search Candidates"
+        description="Find candidates by matching a job description against indexed profiles"
+      />
+      <div className="page-body">
+        <SearchForm onSearch={handleSearch} isSearching={isSearching} />
+
+        {/* Results */}
+        {hasSearched && candidates.length > 0 && (
+          <>
+            <div className="search-results-header">
+              <h2>Matched Candidates</h2>
+              <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+                <span className="search-results-count">
+                  {candidates.length} result{candidates.length === 1 ? "" : "s"}
+                </span>
+                <button
+                  className="report-btn"
+                  onClick={() => generateCandidateReport(candidates, lastJobDescription)}
+                  title="Download full PDF report for all matched candidates"
+                >
+                  📄 Download Report
+                </button>
+              </div>
+            </div>
+            <div className="search-results-grid">
+              {candidates.map((c, i) => (
+                <CandidateCard
+                  key={c.candidateId}
+                  candidate={c}
+                  index={i}
+                />
+              ))}
+            </div>
+          </>
+        )}
+
+        {/* Empty state */}
+        {hasSearched && candidates.length === 0 && !isSearching && (
+          <div className="empty-state">
+            <span className="empty-state-icon">🔭</span>
+            <h3>No candidates found</h3>
+            <p>
+              Try broadening your job description or uploading more resumes
+              to build the candidate index.
+            </p>
+          </div>
+        )}
+
+        {/* Initial state */}
+        {!hasSearched && !isSearching && (
+          <div className="empty-state">
+            <span className="empty-state-icon">✨</span>
+            <h3>Semantic Candidate Search</h3>
+            <p>
+              Enter a job description above to find semantically matching
+              candidates from the indexed pool.
+            </p>
+          </div>
+        )}
+
+        {isSearching && (
+          <div className="search-results-grid">
+            {[1, 2, 3].map((i) => (
+              <div key={i} className="candidate-card skeleton-card">
+                <div className="skeleton-header">
+                  <div className="skeleton-ring"></div>
+                  <div className="skeleton-info">
+                    <div className="skeleton-line title"></div>
+                    <div className="skeleton-line subtitle"></div>
+                    <div className="skeleton-line details"></div>
+                  </div>
+                </div>
+                <div className="skeleton-body">
+                  <div className="skeleton-line"></div>
+                  <div className="skeleton-line"></div>
+                  <div className="skeleton-line"></div>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+    </>
+  );
+}

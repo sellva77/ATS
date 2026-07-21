@@ -74,17 +74,92 @@ export async function uploadResume(
       rawText: string;
     };
 
-    // 4. Store candidate truth
-    const candidate =
-      await prisma.candidateProfile.create({
-        data: {
-          documentId: document.id,
-          profile: profileResult.profile,
-          rawText: profileResult.rawText,
+    // 4. Detect duplicate candidate by name + email
+    const candidateName =
+      profileResult.profile?.candidate?.name?.trim() || null;
+    const candidateEmail =
+      profileResult.profile?.candidate?.email?.trim() || null;
+
+    let existingCandidate = null;
+
+    if (candidateName) {
+      // Search by name match in the JSON profile
+      const matches = await prisma.candidateProfile.findMany({
+        where: {
+          profile: {
+            path: ["candidate", "name"],
+            equals: candidateName,
+          },
         },
       });
 
+      // If email is available, prefer an exact name+email match
+      if (matches.length > 0 && candidateEmail) {
+        existingCandidate =
+          matches.find((m: any) => {
+            const email =
+              (m.profile as any)?.candidate?.email?.trim();
+            return email === candidateEmail;
+          }) || matches[0];
+      } else if (matches.length > 0) {
+        existingCandidate = matches[0];
+      }
+    }
+
+    let candidate;
+    let isUpdate = false;
+
+    if (existingCandidate) {
+      // Update existing candidate profile
+      const oldDocumentId = existingCandidate.documentId;
+
+      // Fetch old document to delete from MinIO later
+      const oldDocument = await prisma.resumeDocument.findUnique({
+        where: { id: oldDocumentId },
+      });
+
+      candidate =
+        await prisma.candidateProfile.update({
+          where: { id: existingCandidate.id },
+          data: {
+            documentId: document.id,
+            profile: profileResult.profile,
+            rawText: profileResult.rawText,
+            version: { increment: 1 },
+          },
+        });
+
+      // Delete the old document from MinIO and Postgres
+      if (oldDocument) {
+        try {
+          await minio.removeObject(oldDocument.bucket, oldDocument.objectKey);
+        } catch (err: any) {
+          console.warn(
+            "MinIO delete failed for old document (continuing):",
+            err.message
+          );
+        }
+
+        await prisma.resumeDocument.delete({
+          where: { id: oldDocumentId },
+        });
+      }
+
+      isUpdate = true;
+    } else {
+      // Create new candidate profile
+      candidate =
+        await prisma.candidateProfile.create({
+          data: {
+            documentId: document.id,
+            profile: profileResult.profile,
+            rawText: profileResult.rawText,
+          },
+        });
+    }
+
     // 5. Build embedding and store in Qdrant
+    //    (upserts by candidateId, so updates work automatically)
     await axios.post(
       `${AI_SERVICE_URL}/build-candidate-index`,
       {
@@ -103,12 +178,13 @@ export async function uploadResume(
       },
     });
 
-    return res.status(201).json({
+    return res.status(isUpdate ? 200 : 201).json({
       success: true,
       documentId: document.id,
       candidateId: candidate.id,
       status: "PARSED",
       indexed: true,
+      updated: isUpdate,
     });
   } catch (error: any) {
     if (documentId) {

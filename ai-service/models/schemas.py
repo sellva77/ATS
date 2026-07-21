@@ -27,3 +27,12 @@ class CandidateIndexRequest(BaseModel):
 class CandidateSearchRequest(BaseModel):
     jobDescription: str
     limit: int = 10
+
+class ParseJDRequest(BaseModel):
+    jobDescription: str
+
+class ParseJDResponse(BaseModel):
+    success: bool
+    title: str | None = None
+    domain: str | None = None
+    skills: list[str] = []

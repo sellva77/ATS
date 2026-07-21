@@ -1,6 +1,8 @@
 import os
 
 from google import genai
+# pyrefly: ignore [missing-import]
+from google.genai.errors import ClientError
 
 
 class GeminiProvider:
@@ -13,9 +15,14 @@ class GeminiProvider:
         self.client = genai.Client(api_key=api_key)
 
     async def generate(self, prompt: str) -> str:
-        response = await self.client.aio.models.generate_content(
-            model="gemini-flash-latest",
-            contents=prompt,
-        )
+        try:
+            response = await self.client.aio.models.generate_content(
+                model="gemini-flash-latest",
+                contents=prompt,
+            )
+        except ClientError as exc:
+            raise RuntimeError(
+                f"Gemini API request failed: {exc}. Verify GEMINI_API_KEY access and project permissions."
+            ) from exc
 
         return response.text

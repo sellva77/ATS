@@ -1,4 +1,6 @@
+# pyrefly: ignore [missing-import]
 from qdrant_client import QdrantClient
+# pyrefly: ignore [missing-import]
 from qdrant_client.models import (
     Distance,
     VectorParams,
@@ -42,5 +44,15 @@ def upsert_candidate(
                 payload=metadata,
             )
         ],
+        wait=True,
+    )
+
+
+def delete_candidate(candidate_id: str):
+    ensure_candidate_collection()
+
+    client.delete(
+        collection_name=COLLECTION_NAME,
+        points_selector=[candidate_id],
         wait=True,
     )

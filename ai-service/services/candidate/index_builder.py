@@ -48,7 +48,9 @@ def build_candidate_index(profile: dict) -> dict:
     return {
         "embeddingText": "\n".join(parts),
         "metadata": {
+            "name": profile.get("candidate", {}).get("name"),
             "location": profile.get("candidate", {}).get("location"),
+            "role": profile.get("experience", [{}])[0].get("title") if profile.get("experience") else None,
             "skills": skills,
         },
     }
