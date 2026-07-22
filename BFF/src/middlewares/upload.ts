@@ -1,10 +1,14 @@
 import multer from "multer";
 
+/** Maximum resumes allowed per batch request */
+export const MAX_BATCH_FILES = 10;
+
 export const upload = multer({
   storage: multer.memoryStorage(),
 
   limits: {
-    fileSize: 10 * 1024 * 1024, // 10 MB
+    fileSize: 10 * 1024 * 1024, // 10 MB per file
+    files: MAX_BATCH_FILES,
   },
 
   fileFilter(req, file, cb) {

@@ -1,7 +1,7 @@
 # pyrefly: ignore [missing-import]
 
 # pyrefly: ignore [missing-import]
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, UploadFile, File, Form
 
 from models.schemas import (
     ParseResumeRequest,
@@ -11,8 +11,10 @@ from models.schemas import (
     ParseJDRequest,
 )
 from services.resume import parse_resume
+from services.resume.extractor import extract_text
 from services.job_description_parser import parse as parse_jd
 from services.candidate import build_candidate_index, search_candidates
+from services.candidate.search import search_candidates_by_vector
 from services.embedding import generate_embedding
 from services.vector_store import upsert_candidate, delete_candidate
 from models.search_query import SearchQuery
@@ -80,6 +82,8 @@ async def search_candidate_route(
     candidates = search_candidates(
         jd_text=request.jobDescription,
         limit=request.limit,
+        min_experience=request.minExperience,
+        max_experience=request.maxExperience,
     )
 
     return {
@@ -103,3 +107,50 @@ async def delete_candidate_index(candidate_id: str):
         "success": True,
         "candidateId": candidate_id,
     }
+
+
+@router.post("/search-by-resume")
+async def search_by_resume_route(
+    file: UploadFile = File(...),
+    limit: int = Form(10),
+    minExperience: float | None = Form(None),
+    maxExperience: float | None = Form(None),
+):
+    if not file.filename or not file.filename.lower().endswith(".pdf"):
+        raise HTTPException(
+            status_code=400,
+            detail="Only PDF files are supported",
+        )
+
+    try:
+        pdf_bytes = await file.read()
+        resume_text = extract_text(pdf_bytes)
+
+        if not resume_text.strip():
+            raise HTTPException(
+                status_code=400,
+                detail="Could not extract any text from the uploaded PDF",
+            )
+
+        resume_embedding = generate_embedding(resume_text)
+
+        candidates = search_candidates_by_vector(
+            query_vector=resume_embedding,
+            limit=limit,
+            min_experience=minExperience,
+            max_experience=maxExperience,
+        )
+
+        return {
+            "success": True,
+            "count": len(candidates),
+            "candidates": candidates,
+        }
+
+    except HTTPException:
+        raise
+    except Exception as exc:
+        raise HTTPException(
+            status_code=500,
+            detail=f"Resume search failed: {str(exc)}",
+        )

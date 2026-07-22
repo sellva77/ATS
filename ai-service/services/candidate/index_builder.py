@@ -52,5 +52,6 @@ def build_candidate_index(profile: dict) -> dict:
             "location": profile.get("candidate", {}).get("location"),
             "role": profile.get("experience", [{}])[0].get("title") if profile.get("experience") else None,
             "skills": skills,
+            "totalExperienceYears": profile.get("computed", {}).get("totalExperienceYears"),
         },
     }

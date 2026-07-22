@@ -27,6 +27,8 @@ class CandidateIndexRequest(BaseModel):
 class CandidateSearchRequest(BaseModel):
     jobDescription: str
     limit: int = 10
+    minExperience: float | None = None
+    maxExperience: float | None = None
 
 class ParseJDRequest(BaseModel):
     jobDescription: str

@@ -2,7 +2,7 @@ import { useState, useCallback } from "react";
 import { PageHeader } from "../components/layout/PageHeader";
 import { SearchForm } from "../components/search/SearchForm";
 import { CandidateCard } from "../components/search/CandidateCard";
-import { searchCandidates } from "../api/client";
+import { searchCandidates, searchByResume } from "../api/client";
 import { showToast } from "../components/common/Toast";
 import { generateCandidateReport } from "../utils/generateReport";
 import type { CandidateResult } from "../types";
@@ -14,14 +14,14 @@ export function SearchPage() {
   const [lastJobDescription, setLastJobDescription] = useState("");
 
   const handleSearch = useCallback(
-    async (jobDescription: string, limit: number) => {
+    async (jobDescription: string, limit: number, minExperience?: number, maxExperience?: number) => {
       setIsSearching(true);
       setCandidates([]);
       setHasSearched(false);
       setLastJobDescription(jobDescription);
 
       try {
-        const response = await searchCandidates(jobDescription, limit);
+        const response = await searchCandidates(jobDescription, limit, minExperience, maxExperience);
         setCandidates(response.candidates);
         setHasSearched(true);
 
@@ -43,15 +43,49 @@ export function SearchPage() {
     []
   );
 
+  const handleResumeSearch = useCallback(
+    async (file: File, limit: number, minExperience?: number, maxExperience?: number) => {
+      setIsSearching(true);
+      setCandidates([]);
+      setHasSearched(false);
+      setLastJobDescription(`Resume: ${file.name}`);
+
+      try {
+        const response = await searchByResume(file, limit, minExperience, maxExperience);
+        setCandidates(response.candidates);
+        setHasSearched(true);
+
+        if (response.count > 0) {
+          showToast(
+            "success",
+            `Found ${response.count} similar profile${response.count === 1 ? "" : "s"}`
+          );
+        } else {
+          showToast("info", "No similar profiles found for the uploaded resume");
+        }
+      } catch (err: any) {
+        showToast("error", err.message || "Resume search failed");
+        setHasSearched(true);
+      } finally {
+        setIsSearching(false);
+      }
+    },
+    []
+  );
+
   return (
     <>
       <PageHeader
         icon="🔍"
         title="Search Candidates"
-        description="Find candidates by matching a job description against indexed profiles"
+        description="Find candidates by matching a job description or resume against indexed profiles"
       />
       <div className="page-body">
-        <SearchForm onSearch={handleSearch} isSearching={isSearching} />
+        <SearchForm
+          onSearch={handleSearch}
+          onResumeSearch={handleResumeSearch}
+          isSearching={isSearching}
+        />
 
         {/* Results */}
         {hasSearched && candidates.length > 0 && (
@@ -101,8 +135,8 @@ export function SearchPage() {
             <span className="empty-state-icon">✨</span>
             <h3>Semantic Candidate Search</h3>
             <p>
-              Enter a job description above to find semantically matching
-              candidates from the indexed pool.
+              Enter a job description or upload a resume above to find
+              semantically matching candidates from the indexed pool.
             </p>
           </div>
         )}

@@ -77,6 +77,7 @@ export function ListPage() {
                 <tr>
                   <th>Candidate Name</th>
                   <th>Job Title</th>
+                  <th>Experience</th>
                   <th>Location</th>
                   <th>Source File</th>
                   <th>Status</th>
@@ -91,6 +92,15 @@ export function ListPage() {
                     <tr key={c.id}>
                       <td className="font-medium text-heading">{name}</td>
                       <td>{c.profile?.experience?.[0]?.title || "—"}</td>
+                      <td>
+                        {c.totalExperienceYears != null ? (
+                          <span className="status-badge exp-badge">
+                            {c.totalExperienceYears} {c.totalExperienceYears === 1 ? 'year' : 'years'}
+                          </span>
+                        ) : (
+                          <span className="text-muted">—</span>
+                        )}
+                      </td>
                       <td>{c.profile?.candidate?.location || "—"}</td>
                       <td>
                         <span

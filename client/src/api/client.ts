@@ -1,5 +1,5 @@
 import type {
-  UploadResponse,
+  BatchUploadResponse,
   UploadErrorResponse,
   SearchResponse,
   SearchErrorResponse,
@@ -8,21 +8,21 @@ import type {
 const BASE = "/api/v1";
 
 /**
- * Upload a resume file through the pipeline.
- * POST /api/v1/resume-pipeline  (multipart/form-data, field: "file")
+ * Upload 1–10 resume files through the batch pipeline.
+ * POST /api/v1/resume-pipeline  (multipart/form-data, field: "files")
  */
-export async function uploadResume(
-  file: File
-): Promise<UploadResponse> {
+export async function uploadResumes(
+  files: File[]
+): Promise<BatchUploadResponse> {
   const form = new FormData();
-  form.append("file", file);
+  files.forEach((file) => form.append("files", file));
 
   const res = await fetch(`${BASE}/resume-pipeline`, {
     method: "POST",
     body: form,
   });
 
-  const data: UploadResponse | UploadErrorResponse = await res.json();
+  const data: BatchUploadResponse | UploadErrorResponse = await res.json();
 
   if (!res.ok || !data.success) {
     throw new Error(
@@ -30,7 +30,7 @@ export async function uploadResume(
     );
   }
 
-  return data as UploadResponse;
+  return data as BatchUploadResponse;
 }
 
 /**
@@ -39,12 +39,14 @@ export async function uploadResume(
  */
 export async function searchCandidates(
   jobDescription: string,
-  limit: number = 10
+  limit: number = 10,
+  minExperience?: number,
+  maxExperience?: number
 ): Promise<SearchResponse> {
   const res = await fetch(`${BASE}/search-candidates`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ jobDescription, limit }),
+    body: JSON.stringify({ jobDescription, limit, minExperience, maxExperience }),
   });
 
   const data: SearchResponse | SearchErrorResponse = await res.json();
@@ -59,10 +61,46 @@ export async function searchCandidates(
 }
 
 /**
+ * Search candidates by uploading a resume PDF.
+ * POST /api/v1/search-by-resume  (multipart/form-data, field: "file")
+ */
+export async function searchByResume(
+  file: File,
+  limit: number = 10,
+  minExperience?: number,
+  maxExperience?: number
+): Promise<SearchResponse> {
+  const form = new FormData();
+  form.append("file", file);
+  form.append("limit", String(limit));
+  if (minExperience !== undefined) {
+    form.append("minExperience", String(minExperience));
+  }
+  if (maxExperience !== undefined) {
+    form.append("maxExperience", String(maxExperience));
+  }
+
+  const res = await fetch(`${BASE}/search-by-resume`, {
+    method: "POST",
+    body: form,
+  });
+
+  const data: SearchResponse | SearchErrorResponse = await res.json();
+
+  if (!res.ok || !data.success) {
+    throw new Error(
+      (data as SearchErrorResponse).error || "Resume search failed"
+    );
+  }
+
+  return data as SearchResponse;
+}
+
+/**
  * List all parsed candidate profiles.
  * GET /api/v1/candidates
  */
-export async function listCandidates(): Promise<import("../../types").ListResponse> {
+export async function listCandidates(): Promise<import("../types").ListResponse> {
   const res = await fetch(`${BASE}/candidates`, {
     method: "GET",
   });

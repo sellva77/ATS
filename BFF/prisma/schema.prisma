@@ -36,9 +36,14 @@ model CandidateProfile {
   id         String @id @default(uuid())
   documentId String @unique
 
-  profile Json
-  rawText String?
-  version Int @default(1)
+  profile    Json
+  rawText    String?
+  version    Int @default(1)
+
+  /// Deterministically calculated from the experience[] array.
+  /// Stored here for fast recruiter filters (e.g. ≥5 years) without
+  /// needing to parse the JSON profile on every query.
+  totalExperienceYears Float?
 
   document ResumeDocument @relation(fields: [documentId], references: [id], onDelete: Cascade)
 

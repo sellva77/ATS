@@ -12,7 +12,7 @@ export async function searchCandidates(
   res: Response
 ) {
   try {
-    const { jobDescription, limit = 10 } = req.body;
+    const { jobDescription, limit = 10, minExperience, maxExperience } = req.body;
 
     if (!jobDescription) {
       return res.status(400).json({
@@ -21,7 +21,7 @@ export async function searchCandidates(
       });
     }
 
-    const semanticCandidates = await aiSearchProvider.semanticSearch(jobDescription, limit);
+    const semanticCandidates = await aiSearchProvider.semanticSearch(jobDescription, limit, minExperience, maxExperience);
     
     if (semanticCandidates.length === 0) {
       return res.status(200).json({ success: true, count: 0, candidates: [] });

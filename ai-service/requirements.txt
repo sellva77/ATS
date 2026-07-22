@@ -7,3 +7,4 @@ pydantic
 google-genai
 sentence-transformers
 qdrant-client
+python-multipart

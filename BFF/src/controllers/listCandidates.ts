@@ -29,6 +29,7 @@ export async function listCandidates(
         documentId: c.documentId,
         profile: c.profile,
         version: c.version,
+        totalExperienceYears: c.totalExperienceYears,
         createdAt: c.createdAt,
         updatedAt: c.updatedAt,
         document: {

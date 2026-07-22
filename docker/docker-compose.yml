@@ -62,7 +62,34 @@ services:
       - minio
       - qdrant
 
+  bff:
+    build:
+      context: ../BFF
+    container_name: ats-bff
+    ports:
+      - "3000:3000"
+    command: npm run dev
+    volumes:
+      - ../BFF:/app
+      - /app/node_modules
+    depends_on:
+      - postgres
+      - ai-service
+
+  client:
+    build:
+      context: ../client
+    container_name: ats-client
+    ports:
+      - "5173:5173"
+    command: npm run dev -- --host
+    volumes:
+      - ../client:/app
+      - /app/node_modules
+    depends_on:
+      - bff
+
 volumes:
   postgres_data:
   minio_data:
-  qdrant_data:
+  qdrant_data:

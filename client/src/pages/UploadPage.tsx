@@ -2,29 +2,37 @@ import { useState, useCallback } from "react";
 import { PageHeader } from "../components/layout/PageHeader";
 import { ResumeUploader } from "../components/upload/ResumeUploader";
 import { UploadResult } from "../components/upload/UploadResult";
-import { uploadResume } from "../api/client";
+import { uploadResumes } from "../api/client";
 import { showToast } from "../components/common/Toast";
-import type { UploadResponse } from "../types";
+import type { BatchUploadResponse } from "../types";
 
 export function UploadPage() {
   const [isUploading, setIsUploading] = useState(false);
-  const [result, setResult] = useState<UploadResponse | null>(null);
+  const [result, setResult] = useState<BatchUploadResponse | null>(null);
   const [error, setError] = useState<string | null>(null);
 
-  const handleFileSelected = useCallback(async (file: File) => {
+  const handleFilesSelected = useCallback(async (files: File[]) => {
     setIsUploading(true);
     setResult(null);
     setError(null);
 
     try {
-      const response = await uploadResume(file);
+      const response = await uploadResumes(files);
       setResult(response);
-      showToast(
-        "success",
-        response.updated
-          ? `Candidate ${response.candidateId.slice(0, 8)}… updated with new resume`
-          : `Resume processed — candidate ${response.candidateId.slice(0, 8)}… indexed`
-      );
+
+      if (response.failed === 0) {
+        showToast(
+          "success",
+          `${response.succeeded} resume${response.succeeded > 1 ? "s" : ""} processed and indexed successfully`
+        );
+      } else if (response.succeeded === 0) {
+        showToast("error", `All ${response.total} resumes failed to process`);
+      } else {
+        showToast(
+          "info",
+          `${response.succeeded} of ${response.total} resumes processed — ${response.failed} failed`
+        );
+      }
     } catch (err: any) {
       const msg = err.message || "Something went wrong";
       setError(msg);
@@ -43,14 +51,16 @@ export function UploadPage() {
     <>
       <PageHeader
         icon="📄"
-        title="Upload Resume"
-        description="Upload a candidate resume to process through the AI pipeline"
+        title="Upload Resumes"
+        description="Upload up to 10 candidate resumes at once to process through the AI pipeline"
       />
       <div className="page-body">
-        <ResumeUploader
-          onFileSelected={handleFileSelected}
-          isUploading={isUploading}
-        />
+        {!result && !error && (
+          <ResumeUploader
+            onFilesSelected={handleFilesSelected}
+            isUploading={isUploading}
+          />
+        )}
 
         {isUploading && (
           <div className="upload-progress">
@@ -59,7 +69,7 @@ export function UploadPage() {
             </div>
             <div className="upload-progress-label">
               <span className="spinner-inline" />
-              Processing resume through AI pipeline…
+              Processing resumes through AI pipeline…
             </div>
           </div>
         )}

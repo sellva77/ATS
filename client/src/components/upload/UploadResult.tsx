@@ -1,9 +1,17 @@
-import type { UploadResponse } from "../../types";
+import type { BatchUploadResponse, BatchUploadResult } from "../../types";
 
 interface UploadResultProps {
-  result: UploadResponse | null;
+  result: BatchUploadResponse | null;
   error: string | null;
   onReset: () => void;
+}
+
+function StatusBadge({ item }: { item: BatchUploadResult }) {
+  if (item.success && item.updated)
+    return <span className="status-badge status-badge--updated">🔄 Updated</span>;
+  if (item.success)
+    return <span className="status-badge status-badge--success">✅ Indexed</span>;
+  return <span className="status-badge status-badge--error">❌ Failed</span>;
 }
 
 export function UploadResult({ result, error, onReset }: UploadResultProps) {
@@ -30,33 +38,87 @@ export function UploadResult({ result, error, onReset }: UploadResultProps) {
 
   if (!result) return null;
 
+  const allSuccess = result.failed === 0;
+  const allFailed = result.succeeded === 0;
+
   return (
     <div className="upload-result">
+      {/* Summary header */}
       <div className="upload-result-header">
-        <span className="upload-result-icon">{result.updated ? "🔄" : "✅"}</span>
-        <h3>{result.updated ? "Existing Candidate Updated" : "Resume Processed Successfully"}</h3>
+        <span className="upload-result-icon">
+          {allFailed ? "❌" : allSuccess ? "✅" : "⚠️"}
+        </span>
+        <h3>
+          {allFailed
+            ? "All Uploads Failed"
+            : allSuccess
+            ? `${result.succeeded} Resume${result.succeeded > 1 ? "s" : ""} Processed Successfully`
+            : `${result.succeeded} of ${result.total} Processed`}
+        </h3>
       </div>
-      <div className="upload-result-data">
-        <div className="upload-result-field">
-          <label>Document ID</label>
-          <span>{result.documentId}</span>
+
+      {/* Summary bar */}
+      <div className="upload-batch-summary">
+        <div className="batch-summary-stat batch-summary-stat--success">
+          <span className="batch-summary-num">{result.succeeded}</span>
+          <span>Succeeded</span>
         </div>
-        <div className="upload-result-field">
-          <label>Candidate ID</label>
-          <span>{result.candidateId}</span>
+        <div className="batch-summary-stat batch-summary-stat--error">
+          <span className="batch-summary-num">{result.failed}</span>
+          <span>Failed</span>
         </div>
-        <div className="upload-result-field">
-          <label>Status</label>
-          <span>{result.status}</span>
-        </div>
-        <div className="upload-result-field">
-          <label>Indexed</label>
-          <span>{result.indexed ? "Yes — searchable" : "No"}</span>
+        <div className="batch-summary-stat">
+          <span className="batch-summary-num">{result.total}</span>
+          <span>Total</span>
         </div>
       </div>
+
+      {/* Per-file results table */}
+      <div className="upload-batch-table-wrapper">
+        <table className="upload-batch-table">
+          <thead>
+            <tr>
+              <th>File</th>
+              <th>Status</th>
+              <th>Candidate ID</th>
+              <th>Note</th>
+            </tr>
+          </thead>
+          <tbody>
+            {result.results.map((item, idx) => (
+              <tr key={idx} className={item.success ? "" : "row-error"}>
+                <td className="col-filename" title={item.fileName}>
+                  <span>{item.fileName.endsWith(".pdf") ? "📄" : "📝"}</span>
+                  <span>{item.fileName}</span>
+                </td>
+                <td>
+                  <StatusBadge item={item} />
+                </td>
+                <td className="col-id">
+                  {item.candidateId
+                    ? <span title={item.candidateId}>{item.candidateId.slice(0, 8)}…</span>
+                    : <span style={{ color: "var(--text-muted)" }}>—</span>}
+                </td>
+                <td className="col-note">
+                  {item.error ? (
+                    <span className="col-error-text" title={item.error}>
+                      {item.error.length > 60 ? item.error.slice(0, 60) + "…" : item.error}
+                    </span>
+                  ) : item.updated ? (
+                    <span style={{ color: "var(--info)" }}>Profile updated</span>
+                  ) : (
+                    <span style={{ color: "var(--success)" }}>New candidate</span>
+                  )}
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+
       <div className="upload-result-actions">
         <button className="btn-secondary" onClick={onReset}>
-          📄 Upload Another
+          📄 Upload More Resumes
         </button>
       </div>
     </div>

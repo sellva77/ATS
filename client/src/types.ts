@@ -1,12 +1,24 @@
 /* ── Resume Pipeline ── */
 
-export interface UploadResponse {
+/** Per-file result returned inside a batch upload response */
+export interface BatchUploadResult {
   success: boolean;
-  documentId: string;
-  candidateId: string;
-  status: "PARSED" | "FAILED";
-  indexed: boolean;
-  updated: boolean;
+  fileName: string;
+  documentId?: string;
+  candidateId?: string;
+  status?: "PARSED" | "FAILED";
+  indexed?: boolean;
+  updated?: boolean;
+  error?: string;
+}
+
+/** Aggregate response for POST /resume-pipeline (1–10 files) */
+export interface BatchUploadResponse {
+  success: boolean;
+  total: number;
+  succeeded: number;
+  failed: number;
+  results: BatchUploadResult[];
 }
 
 export interface UploadErrorResponse {
@@ -19,6 +31,8 @@ export interface UploadErrorResponse {
 export interface SearchRequest {
   jobDescription: string;
   limit?: number;
+  minExperience?: number;
+  maxExperience?: number;
 }
 
 export interface CandidateMetadata {
@@ -60,6 +74,7 @@ export interface ListCandidate {
   documentId: string;
   profile: any;
   version: number;
+  totalExperienceYears?: number | null;
   createdAt: string;
   updatedAt: string;
   document: {

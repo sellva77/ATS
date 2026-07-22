@@ -4,33 +4,29 @@ import axios from "axios";
 
 import { prisma } from "../config/prisma.js";
 import { minio } from "../config/minio.js";
+import { MAX_BATCH_FILES } from "../middlewares/upload.js";
 
 const AI_SERVICE_URL =
   process.env.AI_SERVICE_URL || "http://localhost:8000";
 
-export async function uploadResume(
-  req: Request,
-  res: Response
-) {
-  const file = req.file;
+const bucket = process.env.MINIO_BUCKET || "ats-resumes";
 
-  if (!file) {
-    return res.status(400).json({
-      success: false,
-      error: "Resume file is required",
-    });
-  }
-
-  const bucket =
-    process.env.MINIO_BUCKET || "ats-resumes";
-
-  const ext = file.originalname.substring(
-    file.originalname.lastIndexOf(".")
-  );
-
-  const objectKey =
-    `resumes/${crypto.randomUUID()}${ext}`;
-
+/* ─────────────────────────────────────────────────────────────
+   Helper: process a single resume file through the AI pipeline
+   ───────────────────────────────────────────────────────────── */
+async function processSingleResume(file: Express.Multer.File): Promise<{
+  success: boolean;
+  fileName: string;
+  documentId?: string;
+  candidateId?: string;
+  status?: "PARSED" | "FAILED";
+  indexed?: boolean;
+  updated?: boolean;
+  error?: string;
+}> {
+  const fileName = file.originalname;
+  const ext = fileName.substring(fileName.lastIndexOf("."));
+  const objectKey = `resumes/${crypto.randomUUID()}${ext}`;
   let documentId: string | null = null;
 
   try {
@@ -40,32 +36,27 @@ export async function uploadResume(
       objectKey,
       file.buffer,
       file.size,
-      {
-        "Content-Type": file.mimetype,
-      }
+      { "Content-Type": file.mimetype }
     );
 
     // 2. Store document metadata
-    const document =
-      await prisma.resumeDocument.create({
-        data: {
-          bucket,
-          objectKey,
-          originalName: file.originalname,
-          mimeType: file.mimetype,
-          fileSize: file.size,
-          status: "PROCESSING",
-        },
-      });
+    const document = await prisma.resumeDocument.create({
+      data: {
+        bucket,
+        objectKey,
+        originalName: fileName,
+        mimeType: file.mimetype,
+        fileSize: file.size,
+        status: "PROCESSING",
+      },
+    });
 
     documentId = document.id;
 
-    // 3. Profile resume
+    // 3. Parse resume via AI service
     const profileResponse = await axios.post(
       `${AI_SERVICE_URL}/parse-resume`,
-      {
-        objectKey,
-      }
+      { objectKey }
     );
 
     const profileResult = profileResponse.data as {
@@ -73,6 +64,11 @@ export async function uploadResume(
       profile: any;
       rawText: string;
     };
+
+    // Extract the deterministically computed experience years from
+    // the "computed" block that experience.py attaches to the profile.
+    const totalExperienceYears: number | null =
+      profileResult.profile?.computed?.totalExperienceYears ?? null;
 
     // 4. Detect duplicate candidate by name + email
     const candidateName =
@@ -83,7 +79,6 @@ export async function uploadResume(
     let existingCandidate = null;
 
     if (candidateName) {
-      // Search by name match in the JSON profile
       const matches = await prisma.candidateProfile.findMany({
         where: {
           profile: {
@@ -93,7 +88,6 @@ export async function uploadResume(
         },
       });
 
-      // If email is available, prefer an exact name+email match
       if (matches.length > 0 && candidateEmail) {
         existingCandidate =
           matches.find((m: any) => {
@@ -112,24 +106,22 @@ export async function uploadResume(
     if (existingCandidate) {
       // Update existing candidate profile
       const oldDocumentId = existingCandidate.documentId;
-
-      // Fetch old document to delete from MinIO later
       const oldDocument = await prisma.resumeDocument.findUnique({
         where: { id: oldDocumentId },
       });
 
-      candidate =
-        await prisma.candidateProfile.update({
-          where: { id: existingCandidate.id },
-          data: {
-            documentId: document.id,
-            profile: profileResult.profile,
-            rawText: profileResult.rawText,
-            version: { increment: 1 },
-          },
-        });
+      candidate = await prisma.candidateProfile.update({
+        where: { id: existingCandidate.id },
+        data: {
+          documentId: document.id,
+          profile: profileResult.profile,
+          rawText: profileResult.rawText,
+          version: { increment: 1 },
+          totalExperienceYears,
+        },
+      });
 
-      // Delete the old document from MinIO and Postgres
+      // Delete old document from MinIO + Postgres
       if (oldDocument) {
         try {
           await minio.removeObject(oldDocument.bucket, oldDocument.objectKey);
@@ -139,7 +131,6 @@ export async function uploadResume(
             err.message
           );
         }
-
         await prisma.resumeDocument.delete({
           where: { id: oldDocumentId },
         });
@@ -148,67 +139,116 @@ export async function uploadResume(
       isUpdate = true;
     } else {
       // Create new candidate profile
-      candidate =
-        await prisma.candidateProfile.create({
-          data: {
-            documentId: document.id,
-            profile: profileResult.profile,
-            rawText: profileResult.rawText,
-          },
-        });
+      candidate = await prisma.candidateProfile.create({
+        data: {
+          documentId: document.id,
+          profile: profileResult.profile,
+          rawText: profileResult.rawText,
+          totalExperienceYears,
+        },
+      });
     }
 
     // 5. Build embedding and store in Qdrant
-    //    (upserts by candidateId, so updates work automatically)
-    await axios.post(
-      `${AI_SERVICE_URL}/build-candidate-index`,
-      {
-        candidateId: candidate.id,
-        profile: profileResult.profile,
-      }
-    );
+    await axios.post(`${AI_SERVICE_URL}/build-candidate-index`, {
+      candidateId: candidate.id,
+      profile: profileResult.profile,
+    });
 
     // 6. Mark pipeline complete
     await prisma.resumeDocument.update({
-      where: {
-        id: document.id,
-      },
-      data: {
-        status: "PARSED",
-      },
+      where: { id: document.id },
+      data: { status: "PARSED" },
     });
 
-    return res.status(isUpdate ? 200 : 201).json({
+    return {
       success: true,
+      fileName,
       documentId: document.id,
       candidateId: candidate.id,
       status: "PARSED",
       indexed: true,
       updated: isUpdate,
-    });
+    };
   } catch (error: any) {
     if (documentId) {
-      await prisma.resumeDocument.update({
-        where: {
-          id: documentId,
-        },
-        data: {
-          status: "FAILED",
-        },
-      });
+      await prisma.resumeDocument
+        .update({
+          where: { id: documentId },
+          data: { status: "FAILED" },
+        })
+        .catch(() => {});
     }
 
     console.error(
-      "Resume pipeline failed:",
+      `Resume pipeline failed for "${fileName}":`,
       error.response?.data || error.message
     );
 
-    return res.status(500).json({
+    return {
       success: false,
+      fileName,
+      status: "FAILED",
       error:
         error.response?.data?.detail ||
         error.response?.data?.error ||
         error.message,
+    };
+  }
+}
+
+/* ─────────────────────────────────────────────────────────────
+   Controller: POST /resume-pipeline
+   Accepts 1–10 files (field name: "files") and processes them
+   concurrently.  Returns a batch summary + per-file results.
+   ───────────────────────────────────────────────────────────── */
+export async function uploadResumes(
+  req: Request,
+  res: Response
+) {
+  const files = req.files as Express.Multer.File[] | undefined;
+
+  if (!files || files.length === 0) {
+    return res.status(400).json({
+      success: false,
+      error: "At least one resume file is required",
     });
   }
+
+  if (files.length > MAX_BATCH_FILES) {
+    return res.status(400).json({
+      success: false,
+      error: `Maximum ${MAX_BATCH_FILES} files allowed per upload`,
+    });
+  }
+
+  // Process all files concurrently
+  const settled = await Promise.allSettled(
+    files.map((file) => processSingleResume(file))
+  );
+
+  const results = settled.map((outcome) => {
+    if (outcome.status === "fulfilled") return outcome.value;
+    // Unexpected rejection — treat as failure
+    return {
+      success: false,
+      fileName: "unknown",
+      status: "FAILED" as const,
+      error: outcome.reason?.message || "Unexpected error",
+    };
+  });
+
+  const succeeded = results.filter((r) => r.success).length;
+  const failed = results.length - succeeded;
+
+  const httpStatus =
+    succeeded === 0 ? 500 : failed > 0 ? 207 : 201;
+
+  return res.status(httpStatus).json({
+    success: succeeded > 0,
+    total: results.length,
+    succeeded,
+    failed,
+    results,
+  });
 }
