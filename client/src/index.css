@@ -110,16 +110,34 @@ body {
 
 /* ── Typography ── */
 
-h1, h2, h3, h4, h5, h6 {
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
   font-family: var(--font-heading);
   color: var(--text-heading);
   font-weight: 600;
   line-height: 1.25;
 }
 
-h1 { font-size: 2rem; font-weight: 700; letter-spacing: -0.03em; }
-h2 { font-size: 1.5rem; font-weight: 600; letter-spacing: -0.02em; }
-h3 { font-size: 1.15rem; font-weight: 600; }
+h1 {
+  font-size: 2rem;
+  font-weight: 700;
+  letter-spacing: -0.03em;
+}
+
+h2 {
+  font-size: 1.5rem;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+}
+
+h3 {
+  font-size: 1.15rem;
+  font-weight: 600;
+}
 
 p {
   color: var(--text-secondary);
@@ -167,8 +185,13 @@ a:hover {
    ═══════════════════════════════════════════════ */
 
 @keyframes fadeIn {
-  from { opacity: 0; }
-  to { opacity: 1; }
+  from {
+    opacity: 0;
+  }
+
+  to {
+    opacity: 1;
+  }
 }
 
 @keyframes slideUp {
@@ -176,6 +199,7 @@ a:hover {
     opacity: 0;
     transform: translateY(16px);
   }
+
   to {
     opacity: 1;
     transform: translateY(0);
@@ -187,6 +211,7 @@ a:hover {
     opacity: 0;
     transform: translateX(-12px);
   }
+
   to {
     opacity: 1;
     transform: translateX(0);
@@ -198,6 +223,7 @@ a:hover {
     opacity: 0;
     transform: translateX(12px);
   }
+
   to {
     opacity: 1;
     transform: translateX(0);
@@ -205,9 +231,12 @@ a:hover {
 }
 
 @keyframes pulseGlow {
-  0%, 100% {
+
+  0%,
+  100% {
     box-shadow: 0 0 12px rgba(124, 92, 252, 0.15);
   }
+
   50% {
     box-shadow: 0 0 28px rgba(124, 92, 252, 0.35);
   }
@@ -217,18 +246,26 @@ a:hover {
   0% {
     background-position: -200% 0;
   }
+
   100% {
     background-position: 200% 0;
   }
 }
 
 @keyframes spin {
-  to { transform: rotate(360deg); }
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 @keyframes borderRotate {
-  0% { --angle: 0deg; }
-  100% { --angle: 360deg; }
+  0% {
+    --angle: 0deg;
+  }
+
+  100% {
+    --angle: 360deg;
+  }
 }
 
 @keyframes toastIn {
@@ -236,6 +273,7 @@ a:hover {
     opacity: 0;
     transform: translateX(100%) scale(0.95);
   }
+
   to {
     opacity: 1;
     transform: translateX(0) scale(1);
@@ -247,6 +285,7 @@ a:hover {
     opacity: 1;
     transform: translateX(0) scale(1);
   }
+
   to {
     opacity: 0;
     transform: translateX(100%) scale(0.95);
@@ -254,11 +293,25 @@ a:hover {
 }
 
 @keyframes progressPulse {
-  0% { width: 10%; }
-  30% { width: 50%; }
-  60% { width: 75%; }
-  80% { width: 85%; }
-  100% { width: 95%; }
+  0% {
+    width: 10%;
+  }
+
+  30% {
+    width: 50%;
+  }
+
+  60% {
+    width: 75%;
+  }
+
+  80% {
+    width: 85%;
+  }
+
+  100% {
+    width: 95%;
+  }
 }
 
 @keyframes scoreReveal {
@@ -268,6 +321,13 @@ a:hover {
 }
 
 @keyframes float {
-  0%, 100% { transform: translateY(0); }
-  50% { transform: translateY(-6px); }
+
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+
+  50% {
+    transform: translateY(-6px);
+  }
 }

@@ -42,6 +42,11 @@ export interface CandidateMetadata {
   skills: string[];
 }
 
+export interface ExperienceRange {
+  min?: number | null;
+  max?: number | null;
+}
+
 export interface CandidateResult {
   candidateId: string;
   semanticScore: number;
@@ -54,6 +59,8 @@ export interface CandidateResult {
   matchedSkills: string[];
   missingSkills: string[];
   metadata: CandidateMetadata;
+  candidateExperienceYears?: number | null;
+  requiredExperience?: ExperienceRange | null;
 }
 
 export interface SearchResponse {
@@ -102,4 +109,25 @@ export interface ToastMessage {
   id: string;
   type: ToastType;
   message: string;
+}
+
+/* ── Auth / RBAC ── */
+
+export type Role = "ADMIN" | "RECRUITER" | "INTERVIEWER";
+
+export interface User {
+  id: string;
+  email: string;
+  role: Role;
+}
+
+export interface LoginResponse {
+  success: boolean;
+  token: string;
+  user: User;
+}
+
+export interface MeResponse {
+  success: boolean;
+  user: User;
 }

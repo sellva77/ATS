@@ -80,6 +80,8 @@ export function CandidateCard({ candidate, index }: CandidateCardProps) {
         <div className="details-content">
           <p>Semantic Score: {Math.round(semanticScore * 100)}%</p>
           <p>Skill Score: {Math.round(skillScore * 100)}%</p>
+          <p>Title Score: {Math.round(candidate.titleScore * 100)}%</p>
+          <p>Experience Score: {Math.round(candidate.experienceScore * 100)}%</p>
         </div>
       </details>
 

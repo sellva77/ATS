@@ -60,9 +60,10 @@ export async function searchByResume(req: Request, res: Response) {
 
     // Build a minimal parsed query from the resume context for ranking
     const parsedQuery = {
-      title: null,
+      jobTitle: null,
       domain: null,
-      skills: [] as string[],
+      requiredSkills: [] as string[],
+      preferredSkills: [] as string[],
       raw: "",
     };
 

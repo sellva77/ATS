@@ -85,7 +85,6 @@ async def search_candidate_route(
         min_experience=request.minExperience,
         max_experience=request.maxExperience,
     )
-
     return {
         "success": True,
         "count": len(candidates),

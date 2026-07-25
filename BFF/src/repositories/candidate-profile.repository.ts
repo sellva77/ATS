@@ -13,6 +13,6 @@ export class CandidateProfileRepository {
       where: { id: { in: candidateIds } }
     });
     
-    return new Map(profiles.map(p => [p.id, p.profile]));
+    return new Map(profiles.map((p: any) => [p.id, p.profile]));
   }
 }

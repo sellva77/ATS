@@ -24,7 +24,7 @@ export async function listCandidates(
     return res.status(200).json({
       success: true,
       count: candidates.length,
-      candidates: candidates.map((c) => ({
+      candidates: candidates.map((c: any) => ({
         id: c.id,
         documentId: c.documentId,
         profile: c.profile,

@@ -4,6 +4,8 @@ interface UploadResultProps {
   result: BatchUploadResponse | null;
   error: string | null;
   onReset: () => void;
+  onRetry?: (fileName: string) => void;
+  retryingFileName?: string | null;
 }
 
 function StatusBadge({ item }: { item: BatchUploadResult }) {
@@ -14,7 +16,7 @@ function StatusBadge({ item }: { item: BatchUploadResult }) {
   return <span className="status-badge status-badge--error">❌ Failed</span>;
 }
 
-export function UploadResult({ result, error, onReset }: UploadResultProps) {
+export function UploadResult({ result, error, onReset, onRetry, retryingFileName }: UploadResultProps) {
   if (!result && !error) return null;
 
   if (error) {
@@ -101,9 +103,21 @@ export function UploadResult({ result, error, onReset }: UploadResultProps) {
                 </td>
                 <td className="col-note">
                   {item.error ? (
-                    <span className="col-error-text" title={item.error}>
-                      {item.error.length > 60 ? item.error.slice(0, 60) + "…" : item.error}
-                    </span>
+                    <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                      <span className="col-error-text" title={item.error}>
+                        {item.error.length > 60 ? item.error.slice(0, 60) + "…" : item.error}
+                      </span>
+                      {onRetry && (
+                        <button
+                          className="btn-secondary"
+                          style={{ padding: "4px 8px", fontSize: "0.75rem", minHeight: "unset" }}
+                          onClick={() => onRetry(item.fileName)}
+                          disabled={retryingFileName === item.fileName}
+                        >
+                          {retryingFileName === item.fileName ? "Retrying…" : "Retry"}
+                        </button>
+                      )}
+                    </div>
                   ) : item.updated ? (
                     <span style={{ color: "var(--info)" }}>Profile updated</span>
                   ) : (

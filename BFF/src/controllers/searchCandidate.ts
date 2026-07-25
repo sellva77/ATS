@@ -21,14 +21,15 @@ export async function searchCandidates(
       });
     }
 
-    const semanticCandidates = await aiSearchProvider.semanticSearch(jobDescription, limit, minExperience, maxExperience);
+    // Run semantic search and JD parsing in parallel
+    const [semanticCandidates, parsedQuery] = await Promise.all([
+      aiSearchProvider.semanticSearch(jobDescription, limit, minExperience, maxExperience),
+      aiSearchProvider.parseJobDescription(jobDescription),
+    ]);
     
     if (semanticCandidates.length === 0) {
       return res.status(200).json({ success: true, count: 0, candidates: [] });
     }
-
-    const parsedQuery = await aiSearchProvider.parseJobDescription(jobDescription);
-    parsedQuery.raw = jobDescription; // Add the raw text for highlighting if needed
 
     const profiles = await candidateProfileRepository.getProfiles(semanticCandidates);
     const rankedCandidates = rankingEngine.rank(semanticCandidates, profiles, parsedQuery);

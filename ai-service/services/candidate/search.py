@@ -1,3 +1,4 @@
+# pyrefly: ignore [missing-import]
 from qdrant_client.http import models
 from services.embedding import generate_embedding
 from services.vector_store import client, COLLECTION_NAME

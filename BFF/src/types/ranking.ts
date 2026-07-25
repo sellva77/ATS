@@ -1,3 +1,8 @@
+export interface ExperienceRange {
+  min?: number | null;
+  max?: number | null;
+}
+
 export interface CandidateRanking {
   candidateId: string;
   semanticScore: number;
@@ -10,13 +15,19 @@ export interface CandidateRanking {
   matchedSkills: string[];
   missingSkills: string[];
   metadata: any;
+  candidateExperienceYears?: number | null;
+  requiredExperience?: ExperienceRange | null;
 }
 
 export interface SearchQuery {
-  skills: string[];
-  title?: string;
-  experience?: number;
-  education?: string;
+  jobTitle?: string | null;
+  domain?: string | null;
+  requiredSkills: string[];
+  preferredSkills: string[];
+  experience?: ExperienceRange | null;
+  education?: string | null;
+  certifications?: string[];
+  keywords?: string[];
   raw: string;
 }
 

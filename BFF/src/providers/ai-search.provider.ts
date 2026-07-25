@@ -1,5 +1,5 @@
 import axios from "axios";
-import { CandidateSearchProvider, SemanticCandidate } from "../types/ranking.js";
+import { CandidateSearchProvider, SemanticCandidate, SearchQuery } from "../types/ranking.js";
 
 const AI_SERVICE_URL = process.env.AI_SERVICE_URL || "http://localhost:8000";
 
@@ -23,7 +23,7 @@ export class AISearchProvider implements CandidateSearchProvider {
     }
   }
   
-  public async parseJobDescription(query: string): Promise<any> {
+  public async parseJobDescription(query: string): Promise<SearchQuery> {
     try {
       const response = await axios.post(
         `${AI_SERVICE_URL}/parse-job-description`,
@@ -32,10 +32,27 @@ export class AISearchProvider implements CandidateSearchProvider {
         }
       );
       
-      return response.data;
+      const data = response.data;
+
+      return {
+        jobTitle: data.jobTitle || null,
+        domain: data.domain || null,
+        requiredSkills: data.requiredSkills || [],
+        preferredSkills: data.preferredSkills || [],
+        experience: data.experience || null,
+        education: data.education || null,
+        certifications: data.certifications || [],
+        keywords: data.keywords || [],
+        raw: query,
+      };
     } catch (error: any) {
       console.error("AI Parse JD error:", error.response?.data || error.message);
-      throw new Error("Failed to parse job description");
+      // Return a minimal query so search can still proceed with semantic results
+      return {
+        requiredSkills: [],
+        preferredSkills: [],
+        raw: query,
+      };
     }
   }
 }

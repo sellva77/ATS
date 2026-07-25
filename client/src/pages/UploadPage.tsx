@@ -10,11 +10,14 @@ export function UploadPage() {
   const [isUploading, setIsUploading] = useState(false);
   const [result, setResult] = useState<BatchUploadResponse | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [uploadedFiles, setUploadedFiles] = useState<File[]>([]);
+  const [retryingFileName, setRetryingFileName] = useState<string | null>(null);
 
   const handleFilesSelected = useCallback(async (files: File[]) => {
     setIsUploading(true);
     setResult(null);
     setError(null);
+    setUploadedFiles(files);
 
     try {
       const response = await uploadResumes(files);
@@ -45,7 +48,45 @@ export function UploadPage() {
   const handleReset = useCallback(() => {
     setResult(null);
     setError(null);
+    setUploadedFiles([]);
   }, []);
+
+  const handleRetryFile = useCallback(async (fileName: string) => {
+    if (!result) return;
+    const fileToRetry = uploadedFiles.find((f) => f.name === fileName);
+    if (!fileToRetry) return;
+
+    setRetryingFileName(fileName);
+    try {
+      const response = await uploadResumes([fileToRetry]);
+      const newResultItem = response.results[0];
+
+      setResult((prev) => {
+        if (!prev) return prev;
+        const newResults = prev.results.map((item) =>
+          item.fileName === fileName ? newResultItem : item
+        );
+        const succeeded = newResults.filter((r) => r.success).length;
+        const failed = newResults.filter((r) => !r.success).length;
+        return {
+          ...prev,
+          results: newResults,
+          succeeded,
+          failed,
+        };
+      });
+
+      if (newResultItem.success) {
+        showToast("success", `Successfully processed ${fileName}`);
+      } else {
+        showToast("error", `Failed to process ${fileName}`);
+      }
+    } catch (err: any) {
+      showToast("error", err.message || "Failed to retry upload");
+    } finally {
+      setRetryingFileName(null);
+    }
+  }, [uploadedFiles, result]);
 
   return (
     <>
@@ -74,7 +115,13 @@ export function UploadPage() {
           </div>
         )}
 
-        <UploadResult result={result} error={error} onReset={handleReset} />
+        <UploadResult 
+          result={result} 
+          error={error} 
+          onReset={handleReset} 
+          onRetry={handleRetryFile}
+          retryingFileName={retryingFileName}
+        />
       </div>
     </>
   );

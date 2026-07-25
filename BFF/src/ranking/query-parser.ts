@@ -39,7 +39,8 @@ export class QueryParser {
     }
 
     return {
-      skills: Array.from(extractedSkills),
+      requiredSkills: Array.from(extractedSkills),
+      preferredSkills: [],
       raw: raw
     };
   }
