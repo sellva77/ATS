@@ -23,12 +23,14 @@ class ParseResumeResponse(BaseModel):
 class CandidateIndexRequest(BaseModel):
     candidateId: str
     profile: dict
+    organizationId: str | None = None
     
 class CandidateSearchRequest(BaseModel):
     jobDescription: str
     limit: int = 10
     minExperience: float | None = None
     maxExperience: float | None = None
+    organizationId: str | None = None
 
 class ParseJDRequest(BaseModel):
     jobDescription: str

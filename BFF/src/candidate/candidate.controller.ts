@@ -15,8 +15,31 @@ const AI_SERVICE_URL = process.env.AI_SERVICE_URL || "http://localhost:8000";
 
 /* ── GET /candidates ─────────────────────────────────────── */
 export async function listCandidates(req: Request, res: Response) {
+  const user = (req as any).user;
   try {
+    let whereClause: any = {};
+    if (user.role.name !== "ADMIN") {
+      if (user.teamId) {
+        const teamUsers = await prisma.user.findMany({ where: { teamId: user.teamId }, select: { id: true } });
+        const teamUserIds = teamUsers.map((u: any) => u.id);
+        whereClause = {
+          OR: [
+            { assignedManagerId: { in: teamUserIds } },
+            { createdById: { in: teamUserIds } }
+          ]
+        };
+      } else {
+        whereClause = {
+          OR: [
+            { assignedManagerId: user.id },
+            { createdById: user.id }
+          ]
+        };
+      }
+    }
+
     const candidates = await prisma.candidateProfile.findMany({
+      where: whereClause,
       orderBy: { createdAt: "desc" },
       include: {
         document: {
@@ -38,6 +61,8 @@ export async function listCandidates(req: Request, res: Response) {
         profile: c.profile,
         version: c.version,
         totalExperienceYears: c.totalExperienceYears,
+        status: c.status,
+        assignedManagerId: c.assignedManagerId,
         createdAt: c.createdAt,
         updatedAt: c.updatedAt,
         document: {
@@ -62,8 +87,9 @@ export async function searchCandidates(req: Request, res: Response) {
       return res.status(400).json({ success: false, error: "jobDescription is required" });
     }
 
+    const user = (req as any).user;
     const [semanticCandidates, parsedQuery] = await Promise.all([
-      aiSearchProvider.semanticSearch(jobDescription, limit, minExperience, maxExperience),
+      aiSearchProvider.semanticSearch(jobDescription, limit, minExperience, maxExperience, user.role.name === "ADMIN" ? null : user.organizationId),
       aiSearchProvider.parseJobDescription(jobDescription),
     ]);
 
@@ -102,6 +128,11 @@ export async function searchByResume(req: Request, res: Response) {
     if (minExperience !== undefined) form.append("minExperience", String(minExperience));
     if (maxExperience !== undefined) form.append("maxExperience", String(maxExperience));
 
+    const user = (req as any).user;
+    if (user.role.name !== "ADMIN" && user.organizationId) {
+      form.append("organizationId", user.organizationId);
+    }
+
     const aiResponse = await axios.post(`${AI_SERVICE_URL}/search-by-resume`, form, {
       headers: form.getHeaders(),
     });
@@ -127,6 +158,8 @@ export async function searchByResume(req: Request, res: Response) {
 export async function deleteCandidate(req: Request, res: Response) {
   const id = req.params.id as string;
 
+  const user = (req as any).user;
+
   try {
     const candidate = await prisma.candidateProfile.findUnique({
       where: { id },
@@ -135,6 +168,24 @@ export async function deleteCandidate(req: Request, res: Response) {
 
     if (!candidate) {
       return res.status(404).json({ success: false, error: "Candidate not found" });
+    }
+
+    if (user.role.name !== "ADMIN") {
+      let isSameTeam = false;
+      if (user.teamId) {
+        if (candidate.createdById) {
+          const creator = await prisma.user.findUnique({ where: { id: candidate.createdById } });
+          if (creator?.teamId === user.teamId) isSameTeam = true;
+        }
+        if (candidate.assignedManagerId) {
+          const manager = await prisma.user.findUnique({ where: { id: candidate.assignedManagerId } });
+          if (manager?.teamId === user.teamId) isSameTeam = true;
+        }
+      }
+      
+      if (candidate.createdById !== user.id && candidate.assignedManagerId !== user.id && !isSameTeam) {
+        return res.status(403).json({ success: false, error: "Forbidden: You do not own this candidate" });
+      }
     }
 
     const externalTasks: Promise<any>[] = [];
@@ -167,6 +218,8 @@ export async function downloadResume(req: Request, res: Response) {
     return res.status(400).json({ error: "Invalid resume id" });
   }
 
+  const user = (req as any).user;
+
   try {
     const candidate = await prisma.candidateProfile.findUnique({
       where: { id },
@@ -175,6 +228,24 @@ export async function downloadResume(req: Request, res: Response) {
 
     if (!candidate || !candidate.document) {
       return res.status(404).json({ error: "Resume not found" });
+    }
+
+    if (user.role.name !== "ADMIN") {
+      let isSameTeam = false;
+      if (user.teamId) {
+        if (candidate.createdById) {
+          const creator = await prisma.user.findUnique({ where: { id: candidate.createdById } });
+          if (creator?.teamId === user.teamId) isSameTeam = true;
+        }
+        if (candidate.assignedManagerId) {
+          const manager = await prisma.user.findUnique({ where: { id: candidate.assignedManagerId } });
+          if (manager?.teamId === user.teamId) isSameTeam = true;
+        }
+      }
+      
+      if (candidate.createdById !== user.id && candidate.assignedManagerId !== user.id && !isSameTeam) {
+        return res.status(403).json({ error: "Forbidden: You do not own this candidate" });
+      }
     }
 
     const { bucket, objectKey, originalName, mimeType } = candidate.document;
@@ -190,5 +261,120 @@ export async function downloadResume(req: Request, res: Response) {
   } catch (error: any) {
     console.error("Failed to download resume:", error.message);
     res.status(500).json({ error: "Failed to download resume" });
+  }
+}
+
+/* ── PATCH /candidates/:id/assign ────────────────────────── */
+export async function assignCandidate(req: Request, res: Response) {
+  const { id } = req.params;
+  const { managerId } = req.body;
+  const user = (req as any).user;
+
+  if (!managerId) {
+    return res.status(400).json({ success: false, error: "managerId is required" });
+  }
+
+  try {
+    const candidate = await prisma.candidateProfile.findUnique({
+      where: { id },
+    });
+
+    if (!candidate) {
+      return res.status(404).json({ success: false, error: "Candidate not found" });
+    }
+
+    if (user.role.name !== "ADMIN") {
+      let isSameTeam = false;
+      if (user.teamId) {
+        if (candidate.createdById) {
+          const creator = await prisma.user.findUnique({ where: { id: candidate.createdById } });
+          if (creator?.teamId === user.teamId) isSameTeam = true;
+        }
+        if (candidate.assignedManagerId) {
+          const manager = await prisma.user.findUnique({ where: { id: candidate.assignedManagerId } });
+          if (manager?.teamId === user.teamId) isSameTeam = true;
+        }
+      }
+      
+      if (candidate.createdById !== user.id && candidate.assignedManagerId !== user.id && !isSameTeam) {
+        return res.status(403).json({ success: false, error: "Forbidden: You do not own this candidate" });
+      }
+    }
+
+    const manager = await prisma.user.findUnique({
+      where: { id: managerId },
+    });
+
+    if (!manager) {
+      return res.status(404).json({ success: false, error: "Manager not found" });
+    }
+
+    if (user.role.name !== "ADMIN" && manager.organizationId !== user.organizationId) {
+      return res.status(403).json({ success: false, error: "Forbidden: Manager belongs to another organization" });
+    }
+
+    const updated = await prisma.candidateProfile.update({
+      where: { id },
+      data: { assignedManagerId: managerId },
+    });
+
+    return res.status(200).json({ success: true, data: updated });
+  } catch (error: any) {
+    console.error("Assign candidate failed:", error.message);
+    return res.status(500).json({ success: false, error: "Failed to assign candidate" });
+  }
+}
+
+/* ── PATCH /candidates/:id/status ────────────────────────── */
+const VALID_STATUSES = ["NEW", "SCREENING", "SHORTLISTED", "INTERVIEW", "SELECTED", "REJECTED", "HIRED"];
+
+export async function updateCandidateStatus(req: Request, res: Response) {
+  const { id } = req.params;
+  const { status } = req.body;
+  const user = (req as any).user;
+
+  if (!status || !VALID_STATUSES.includes(status)) {
+    return res.status(400).json({
+      success: false,
+      error: `Invalid status. Must be one of: ${VALID_STATUSES.join(", ")}`,
+    });
+  }
+
+  try {
+    const candidate = await prisma.candidateProfile.findUnique({
+      where: { id },
+    });
+
+    if (!candidate) {
+      return res.status(404).json({ success: false, error: "Candidate not found" });
+    }
+
+    if (user.role.name !== "ADMIN") {
+      let isSameTeam = false;
+      if (user.teamId) {
+        if (candidate.createdById) {
+          const creator = await prisma.user.findUnique({ where: { id: candidate.createdById } });
+          if (creator?.teamId === user.teamId) isSameTeam = true;
+        }
+        if (candidate.assignedManagerId) {
+          const manager = await prisma.user.findUnique({ where: { id: candidate.assignedManagerId } });
+          if (manager?.teamId === user.teamId) isSameTeam = true;
+        }
+      }
+      
+      if (candidate.createdById !== user.id && candidate.assignedManagerId !== user.id && !isSameTeam) {
+        return res.status(403).json({ success: false, error: "Forbidden: You do not own this candidate" });
+      }
+    }
+
+    const updated = await prisma.candidateProfile.update({
+      where: { id },
+      data: { status: status as any },
+    });
+
+    return res.status(200).json({ success: true, data: updated });
+  } catch (error: any) {
+    console.error("Update candidate status failed:", error.message);
+    return res.status(500).json({ success: false, error: "Failed to update candidate status" });
   }
 }

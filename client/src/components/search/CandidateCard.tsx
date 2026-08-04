@@ -1,12 +1,15 @@
-import type { CandidateResult } from "../../types";
+import type { CandidateResult, User } from "../../types";
 
 interface CandidateCardProps {
   candidate: CandidateResult;
   index: number;
+  recruiters?: User[];
+  onAssign?: (candidateId: string, recruiterId: string) => void;
+  canAssign?: boolean;
 }
 
-export function CandidateCard({ candidate, index }: CandidateCardProps) {
-  const { candidateId, finalScore, semanticScore, skillScore, matchedSkills, missingSkills, explanation, metadata } = candidate;
+export function CandidateCard({ candidate, index, recruiters = [], onAssign, canAssign }: CandidateCardProps) {
+  const { candidateId, finalScore, semanticScore, skillScore, matchedSkills, missingSkills, explanation, metadata, assignedRecruiterId } = candidate;
   
   const scoreToUse = finalScore ?? 0;
   const pct = Math.round(scoreToUse * 100);
@@ -69,6 +72,26 @@ export function CandidateCard({ candidate, index }: CandidateCardProps) {
             >
               ⬇ Download
             </a>
+          </div>
+
+          <div style={{ marginTop: '12px' }}>
+            {canAssign && onAssign ? (
+              <select 
+                className="search-input" 
+                style={{ padding: "4px", fontSize: "12px", width: "100%", boxSizing: "border-box" }}
+                value={assignedRecruiterId || ""}
+                onChange={(e) => onAssign(candidateId, e.target.value)}
+              >
+                <option value="">Unassigned</option>
+                {recruiters.map(r => (
+                  <option key={r.id} value={r.id}>{r.name || r.email}</option>
+                ))}
+              </select>
+            ) : (
+              <span className="text-muted text-sm">
+                {assignedRecruiterId ? (recruiters.find(r => r.id === assignedRecruiterId)?.name || "Assigned") : "Unassigned"}
+              </span>
+            )}
           </div>
         </div>
       </div>

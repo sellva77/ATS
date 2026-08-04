@@ -25,9 +25,9 @@ export function clearToken(): void {
 
 // ─── Core fetch wrapper ──────────────────────────────────────
 
-type FetchMethod = "GET" | "POST" | "DELETE";
+type FetchMethod = "GET" | "POST" | "DELETE" | "PATCH";
 
-async function request<T>(
+export async function request<T>(
   url: string,
   method: FetchMethod,
   body?: unknown,
@@ -187,4 +187,26 @@ export async function deleteCandidateById(
   id: string
 ): Promise<{ success: boolean; deletedId: string }> {
   return request(`${BASE}/candidates/${id}`, "DELETE");
+}
+
+/**
+ * Assign a candidate to a manager.
+ * PATCH /api/v1/candidates/:id/assign
+ */
+export async function assignCandidate(
+  id: string,
+  managerId: string
+): Promise<{ success: boolean; data: any }> {
+  return request(`${BASE}/candidates/${id}/assign`, "PATCH", { managerId });
+}
+
+/**
+ * Update a candidate's status.
+ * PATCH /api/v1/candidates/:id/status
+ */
+export async function updateCandidateStatus(
+  id: string,
+  status: string
+): Promise<{ success: boolean; data: any }> {
+  return request(`${BASE}/candidates/${id}/status`, "PATCH", { status });
 }

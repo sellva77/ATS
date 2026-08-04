@@ -1,5 +1,4 @@
 import type { Response, NextFunction, RequestHandler } from "express";
-import type { Role } from "@prisma/client";
 import type { AuthRequest } from "../types/auth.js";
 import { verifyToken } from "./jwt.js";
 
@@ -24,10 +23,21 @@ export const authenticate: RequestHandler = (
 
   try {
     const payload = verifyToken(token);
+    
+    // Force re-login for old tokens that didn't have role as an object
+    if (typeof payload.role !== "object" || payload.role === null) {
+      res.status(401).json({ success: false, error: "Outdated token, please log in again" });
+      return;
+    }
+
     (req as AuthRequest).user = {
       id: payload.sub,
+      name: payload.name,
       email: payload.email,
       role: payload.role,
+      permissions: payload.permissions || [],
+      organizationId: payload.organizationId,
+      teamId: payload.teamId,
     };
     next();
   } catch {
@@ -36,20 +46,25 @@ export const authenticate: RequestHandler = (
 };
 
 /**
- * authorize(...roles) — variadic role-check middleware.
+ * requireRole(...roles) — variadic role-check middleware.
  * Must be used AFTER authenticate.
- * Returns 403 Forbidden if the user's role is not in the allowed list.
+ * Returns 403 Forbidden if the user's role is not in the list.
  *
  * Usage:
- *   router.delete("/candidates/:id", authenticate, authorize(Role.RECRUITER, Role.ADMIN), handler);
+ *   router.delete("/candidates/:id", authenticate, requireRole("ADMIN", "TEAM_MANAGER"), handler);
  */
-export const authorize =
-  (...roles: Role[]): RequestHandler =>
+export const requireRole =
+  (...roles: string[]): RequestHandler =>
   (req, res: Response, next: NextFunction) => {
     const user = (req as AuthRequest).user;
 
-    if (!user || !roles.includes(user.role)) {
-      res.status(403).json({ success: false, error: "Forbidden" });
+    if (!user) {
+      res.status(401).json({ success: false, error: "Unauthorized" });
+      return;
+    }
+
+    if (!roles.includes(user.role.name)) {
+      res.status(403).json({ success: false, error: "Forbidden: Insufficient role" });
       return;
     }
 

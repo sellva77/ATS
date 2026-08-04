@@ -1,14 +1,19 @@
 import { useState, useEffect, useCallback } from "react";
 import { PageHeader } from "../components/layout/PageHeader";
 import { LoadingSpinner } from "../components/common/LoadingSpinner";
-import { listCandidates, deleteCandidateById } from "../api/client";
+import { listCandidates, deleteCandidateById, updateCandidateStatus } from "../api/client";
 import { showToast } from "../components/common/Toast";
-import type { ListCandidate } from "../types";
+import type { ListCandidate, CandidateStatus } from "../types";
+import { CANDIDATE_STATUSES, STATUS_COLORS } from "../types";
+import { useAuth } from "../context/AuthContext";
 
 export function ListPage() {
   const [candidates, setCandidates] = useState<ListCandidate[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [deletingId, setDeletingId] = useState<string | null>(null);
+  const { user } = useAuth();
+
+  const isAdmin = user?.role?.name === "ADMIN";
 
   const fetchCandidates = useCallback(async () => {
     setIsLoading(true);
@@ -46,6 +51,18 @@ export function ListPage() {
     []
   );
 
+  const handleStatusChange = useCallback(async (candidateId: string, newStatus: string) => {
+    try {
+      await updateCandidateStatus(candidateId, newStatus);
+      setCandidates(prev => prev.map(c =>
+        c.id === candidateId ? { ...c, status: newStatus as CandidateStatus } : c
+      ));
+      showToast("success", `Status updated to ${newStatus}`);
+    } catch (err: any) {
+      showToast("error", err.message || "Failed to update status");
+    }
+  }, []);
+
   const formatDate = (isoString: string) => {
     return new Date(isoString).toLocaleDateString("en-US", {
       month: "short",
@@ -58,8 +75,11 @@ export function ListPage() {
     <>
       <PageHeader
         icon="👥"
-        title="All Candidates"
-        description="View all candidate profiles extracted and indexed by the system"
+        title={isAdmin ? "All Candidates" : "My Candidates"}
+        description={isAdmin
+          ? "View all candidate profiles across all team managers."
+          : "Candidates you have uploaded and manage."
+        }
       />
       <div className="page-body">
         {isLoading ? (
@@ -81,6 +101,7 @@ export function ListPage() {
                   <th>Location</th>
                   <th>Source File</th>
                   <th>Status</th>
+                  <th>Pipeline</th>
                   <th>Added On</th>
                   <th></th>
                 </tr>
@@ -118,6 +139,30 @@ export function ListPage() {
                         >
                           {c.document.status}
                         </span>
+                      </td>
+                      <td>
+                        <select
+                          className="search-textarea"
+                          style={{
+                            padding: "4px 8px",
+                            minHeight: "30px",
+                            fontSize: "0.75rem",
+                            minWidth: "120px",
+                            background: STATUS_COLORS[c.status] || "#64748b",
+                            color: "#fff",
+                            borderRadius: "6px",
+                            border: "none",
+                            fontWeight: 600,
+                          }}
+                          value={c.status}
+                          onChange={(e) => handleStatusChange(c.id, e.target.value)}
+                        >
+                          {CANDIDATE_STATUSES.map((s) => (
+                            <option key={s} value={s} style={{ background: "#1e293b", color: "#fff" }}>
+                              {s}
+                            </option>
+                          ))}
+                        </select>
                       </td>
                       <td className="text-muted text-sm">
                         {formatDate(c.createdAt)}

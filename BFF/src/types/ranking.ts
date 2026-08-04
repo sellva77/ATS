@@ -38,7 +38,7 @@ export interface SkillMatchResult {
 }
 
 export interface CandidateSearchProvider {
-  semanticSearch(query: string, limit?: number, minExperience?: number, maxExperience?: number): Promise<SemanticCandidate[]>;
+  semanticSearch(query: string, limit?: number, minExperience?: number, maxExperience?: number, organizationId?: string | null): Promise<SemanticCandidate[]>;
 }
 
 export interface SemanticCandidate {

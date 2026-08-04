@@ -25,7 +25,7 @@ export async function loginHandler(req: Request, res: Response) {
 
 /* ── POST /auth/register (dev-only) ──────────────────────── */
 export async function registerHandler(req: Request, res: Response) {
-  const { email, password, role } = req.body;
+  const { email, password, role, name, organizationId, teamId } = req.body;
 
   if (!email || !password) {
     return res
@@ -37,7 +37,10 @@ export async function registerHandler(req: Request, res: Response) {
     const result = await authService.register(
       email,
       password,
-      role as Role | undefined
+      role as Role | undefined,
+      name,
+      organizationId,
+      teamId
     );
     return res.status(201).json({ success: true, ...result });
   } catch (err: any) {

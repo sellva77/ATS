@@ -9,6 +9,7 @@ def search_candidates(
     limit: int = 10,
     min_experience: float | None = None,
     max_experience: float | None = None,
+    organization_id: str | None = None,
 ):
     jd_embedding = generate_embedding(jd_text)
 
@@ -27,6 +28,14 @@ def search_candidates(
             models.FieldCondition(
                 key="totalExperienceYears",
                 range=models.Range(lte=max_experience)
+            )
+        )
+
+    if organization_id is not None:
+        must_conditions.append(
+            models.FieldCondition(
+                key="organizationId",
+                match=models.MatchValue(value=organization_id)
             )
         )
 
@@ -56,6 +65,7 @@ def search_candidates_by_vector(
     limit: int = 10,
     min_experience: float | None = None,
     max_experience: float | None = None,
+    organization_id: str | None = None,
 ):
     """Search candidates using a pre-computed embedding vector."""
     query_filter = None
@@ -73,6 +83,14 @@ def search_candidates_by_vector(
             models.FieldCondition(
                 key="totalExperienceYears",
                 range=models.Range(lte=max_experience)
+            )
+        )
+
+    if organization_id is not None:
+        must_conditions.append(
+            models.FieldCondition(
+                key="organizationId",
+                match=models.MatchValue(value=organization_id)
             )
         )
 

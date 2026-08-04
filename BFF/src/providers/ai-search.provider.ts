@@ -4,7 +4,7 @@ import { CandidateSearchProvider, SemanticCandidate, SearchQuery } from "../type
 const AI_SERVICE_URL = process.env.AI_SERVICE_URL || "http://localhost:8000";
 
 export class AISearchProvider implements CandidateSearchProvider {
-  public async semanticSearch(query: string, limit: number = 10, minExperience?: number, maxExperience?: number): Promise<SemanticCandidate[]> {
+  public async semanticSearch(query: string, limit: number = 10, minExperience?: number, maxExperience?: number, organizationId?: string | null): Promise<SemanticCandidate[]> {
     try {
       const response = await axios.post(
         `${AI_SERVICE_URL}/search-candidates`,
@@ -13,6 +13,7 @@ export class AISearchProvider implements CandidateSearchProvider {
           limit,
           minExperience,
           maxExperience,
+          organizationId,
         }
       );
       

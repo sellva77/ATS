@@ -14,8 +14,8 @@
 
 :root {
   /* ── Backgrounds ── */
-  --bg-primary: #dddddd;
-  --bg-secondary: #7f8083;
+  --bg-primary: #7f8083;
+  --bg-secondary: #dddddd;
   --bg-surface: rgba(255, 255, 255, 0.9);
   --bg-surface-hover: rgba(255, 255, 255, 1);
   --bg-glass: rgba(0, 0, 0, 0.03);

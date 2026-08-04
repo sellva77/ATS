@@ -8,7 +8,11 @@ import type { Role } from "@prisma/client";
 export interface AuthRequest extends Request {
   user: {
     id: string;
+    name: string | null;
     email: string;
-    role: Role;
+    role: { id: string; name: string };
+    permissions: string[];
+    organizationId: string | null;
+    teamId: string | null;
   };
 }

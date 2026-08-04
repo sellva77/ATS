@@ -1,16 +1,15 @@
 import { Router } from "express";
-import { Role } from "@prisma/client";
-import { authenticate, authorize } from "../auth/auth.middleware.js";
+import { authenticate, requireRole } from "../auth/auth.middleware.js";
 import { upload } from "../middlewares/upload.js";
 import { uploadResumes } from "./resume.controller.js";
 
 const router = Router();
 
-// POST /resume-pipeline — RECRUITER and ADMIN only
+// POST /resume-pipeline
 router.post(
   "/resume-pipeline",
   authenticate,
-  authorize(Role.RECRUITER, Role.ADMIN),
+  requireRole("ADMIN", "TEAM_MANAGER"),
   upload.array("files", 10),
   uploadResumes
 );

@@ -55,7 +55,7 @@ async def parse_job_description_route(request: ParseJDRequest):
 
 @router.post("/build-candidate-index")
 async def build_index(request: CandidateIndexRequest):
-    result = build_candidate_index(request.profile)
+    result = build_candidate_index(request.profile, request.organizationId)
 
     embedding = generate_embedding(
         result["embeddingText"]
@@ -84,6 +84,7 @@ async def search_candidate_route(
         limit=request.limit,
         min_experience=request.minExperience,
         max_experience=request.maxExperience,
+        organization_id=request.organizationId,
     )
     return {
         "success": True,
@@ -114,6 +115,7 @@ async def search_by_resume_route(
     limit: int = Form(10),
     minExperience: float | None = Form(None),
     maxExperience: float | None = Form(None),
+    organizationId: str | None = Form(None),
 ):
     if not file.filename or not file.filename.lower().endswith(".pdf"):
         raise HTTPException(
@@ -138,6 +140,7 @@ async def search_by_resume_route(
             limit=limit,
             min_experience=minExperience,
             max_experience=maxExperience,
+            organization_id=organizationId,
         )
 
         return {

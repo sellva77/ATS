@@ -61,6 +61,7 @@ export interface CandidateResult {
   metadata: CandidateMetadata;
   candidateExperienceYears?: number | null;
   requiredExperience?: ExperienceRange | null;
+  assignedManagerId?: string | null;
 }
 
 export interface SearchResponse {
@@ -74,6 +75,24 @@ export interface SearchErrorResponse {
   error: string;
 }
 
+/* ── Candidate Status ── */
+
+export type CandidateStatus = "NEW" | "SCREENING" | "SHORTLISTED" | "INTERVIEW" | "SELECTED" | "REJECTED" | "HIRED";
+
+export const CANDIDATE_STATUSES: CandidateStatus[] = [
+  "NEW", "SCREENING", "SHORTLISTED", "INTERVIEW", "SELECTED", "REJECTED", "HIRED"
+];
+
+export const STATUS_COLORS: Record<CandidateStatus, string> = {
+  NEW: "#64748b",
+  SCREENING: "#f59e0b",
+  SHORTLISTED: "#3b82f6",
+  INTERVIEW: "#8b5cf6",
+  SELECTED: "#10b981",
+  REJECTED: "#ef4444",
+  HIRED: "#059669",
+};
+
 /* ── Candidate List ── */
 
 export interface ListCandidate {
@@ -82,6 +101,8 @@ export interface ListCandidate {
   profile: any;
   version: number;
   totalExperienceYears?: number | null;
+  status: CandidateStatus;
+  assignedManagerId?: string | null;
   createdAt: string;
   updatedAt: string;
   document: {
@@ -99,7 +120,7 @@ export interface ListResponse {
 
 /* ── Navigation ── */
 
-export type Page = "upload" | "search" | "list";
+export type Page = "dashboard" | "upload" | "search" | "list" | "organizations" | "teams" | "users" | "create-user";
 
 /* ── Toast ── */
 
@@ -113,12 +134,15 @@ export interface ToastMessage {
 
 /* ── Auth / RBAC ── */
 
-export type Role = "ADMIN" | "RECRUITER" | "INTERVIEWER";
-
 export interface User {
   id: string;
+  name: string | null;
   email: string;
-  role: Role;
+  phone?: string | null;
+  role: { id: string; name: string };
+  permissions: string[];
+  organizationId: string | null;
+  teamId: string | null;
 }
 
 export interface LoginResponse {
@@ -130,4 +154,45 @@ export interface LoginResponse {
 export interface MeResponse {
   success: boolean;
   user: User;
+}
+
+/* ── Dashboard ── */
+
+export interface DashboardSummary {
+  totalManagers?: number;
+  totalTeams?: number;
+  totalCandidates: number;
+  statusBreakdown: Record<string, number>;
+}
+
+export interface ManagerStats {
+  id: string;
+  name: string | null;
+  email: string;
+  phone: string | null;
+  teamId: string | null;
+  teamName: string | null;
+  candidateCount: number;
+  uploadedCount: number;
+  joinedAt: string;
+}
+
+export interface TeamStats {
+  id: string;
+  name: string;
+  organizationId: string;
+  memberCount: number;
+  candidateCount: number;
+  createdAt: string;
+}
+
+export interface ActivityItem {
+  id: string;
+  candidateName: string;
+  resumeName: string | null;
+  status: CandidateStatus;
+  createdBy: string | null;
+  assignedManager: string | null;
+  createdAt: string;
+  updatedAt: string;
 }

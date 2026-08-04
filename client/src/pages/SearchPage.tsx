@@ -1,17 +1,45 @@
 import { useState, useCallback } from "react";
 import { PageHeader } from "../components/layout/PageHeader";
+import { hasPermission } from "../utils/permissions";
 import { SearchForm } from "../components/search/SearchForm";
 import { CandidateCard } from "../components/search/CandidateCard";
-import { searchCandidates, searchByResume } from "../api/client";
+import { searchCandidates, searchByResume, assignCandidate } from "../api/client";
 import { showToast } from "../components/common/Toast";
 import { generateCandidateReport } from "../utils/generateReport";
-import type { CandidateResult } from "../types";
+import type { CandidateResult, User } from "../types";
+import { useAuth } from "../context/AuthContext";
+import { listUsers } from "../api/user";
+import { useEffect } from "react";
 
 export function SearchPage() {
   const [isSearching, setIsSearching] = useState(false);
   const [candidates, setCandidates] = useState<CandidateResult[]>([]);
+  const [recruiters, setRecruiters] = useState<User[]>([]);
   const [hasSearched, setHasSearched] = useState(false);
   const [lastJobDescription, setLastJobDescription] = useState("");
+  const { user } = useAuth();
+
+  useEffect(() => {
+    const fetchRecruiters = async () => {
+      if (hasPermission(user, "candidate:assign")) {
+        try {
+          const usersData = await listUsers();
+          setRecruiters(usersData.filter(u => u.role?.name === "RECRUITER" || u.role?.name === "TEAM_LEAD"));
+        } catch (e) {}
+      }
+    };
+    fetchRecruiters();
+  }, [user]);
+
+  const handleAssign = useCallback(async (candidateId: string, recruiterId: string) => {
+    try {
+      await assignCandidate(candidateId, recruiterId);
+      setCandidates(prev => prev.map(c => c.candidateId === candidateId ? { ...c, assignedRecruiterId: recruiterId } : c));
+      showToast("success", "Candidate assigned successfully");
+    } catch (err: any) {
+      showToast("error", err.message || "Failed to assign candidate");
+    }
+  }, []);
 
   const handleSearch = useCallback(
     async (jobDescription: string, limit: number, minExperience?: number, maxExperience?: number) => {
@@ -111,6 +139,9 @@ export function SearchPage() {
                   key={c.candidateId}
                   candidate={c}
                   index={i}
+                  recruiters={recruiters}
+                  onAssign={handleAssign}
+                  canAssign={hasPermission(user, "candidate:assign")}
                 />
               ))}
             </div>

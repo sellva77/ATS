@@ -1,14 +1,13 @@
 import { useState } from "react";
 import { useAuth } from "../context/AuthContext";
 import { auth as authApi } from "../api/client";
-import type { Role } from "../types";
 
 type Mode = "login" | "register";
 
 const QUICK_FILL = [
-  { label: "Admin", email: "admin@ats.dev", role: "ADMIN" as Role, icon: "🛡️" },
-  { label: "Recruiter", email: "recruiter@ats.dev", role: "RECRUITER" as Role, icon: "💼" },
-  { label: "Interviewer", email: "interviewer@ats.dev", role: "INTERVIEWER" as Role, icon: "👤" },
+  { label: "Admin", email: "admin@ats.dev", role: "SUPER_ADMIN", icon: "🛡️" },
+  { label: "Recruiter", email: "recruiter@ats.dev", role: "RECRUITER", icon: "💼" },
+  { label: "Interviewer", email: "interviewer@ats.dev", role: "INTERVIEWER", icon: "👤" },
 ];
 
 export function LoginPage() {
@@ -17,7 +16,7 @@ export function LoginPage() {
   const [mode, setMode] = useState<Mode>("login");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [regRole, setRegRole] = useState<Role>("INTERVIEWER");
+  const [regRole, setRegRole] = useState<string>("INTERVIEWER");
   const [error, setError] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [shake, setShake] = useState(false);
@@ -159,11 +158,11 @@ export function LoginPage() {
                 id="register-role"
                 className="login-input login-select"
                 value={regRole}
-                onChange={(e) => setRegRole(e.target.value as Role)}
+                onChange={(e) => setRegRole(e.target.value)}
               >
                 <option value="INTERVIEWER">Interviewer</option>
                 <option value="RECRUITER">Recruiter</option>
-                <option value="ADMIN">Admin</option>
+                <option value="SUPER_ADMIN">Admin</option>
               </select>
             </div>
           )}

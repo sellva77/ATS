@@ -10,6 +10,12 @@ export function showToast(type: ToastType, message: string) {
   toastListener?.({ id, type, message });
 }
 
+export const toast = {
+  success: (message: string) => showToast("success", message),
+  error: (message: string) => showToast("error", message),
+  info: (message: string) => showToast("info", message),
+};
+
 /* ── Component ── */
 
 export function ToastContainer() {

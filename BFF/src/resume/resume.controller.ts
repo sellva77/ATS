@@ -12,7 +12,11 @@ const bucket = process.env.MINIO_BUCKET || "ats-resumes";
 /* ─────────────────────────────────────────────────────────────
    Helper: process a single resume file through the AI pipeline
    ───────────────────────────────────────────────────────────── */
-async function processSingleResume(file: Express.Multer.File): Promise<{
+async function processSingleResume(
+  file: Express.Multer.File,
+  organizationId: string | null,
+  createdById: string
+): Promise<{
   success: boolean;
   fileName: string;
   documentId?: string;
@@ -108,6 +112,7 @@ async function processSingleResume(file: Express.Multer.File): Promise<{
           rawText: profileResult.rawText,
           version: { increment: 1 },
           totalExperienceYears,
+          assignedManagerId: createdById, // Assign to the user uploading it
         },
       });
 
@@ -133,6 +138,9 @@ async function processSingleResume(file: Express.Multer.File): Promise<{
           profile: profileResult.profile,
           rawText: profileResult.rawText,
           totalExperienceYears,
+          organizationId,
+          createdById,
+          assignedManagerId: createdById, // Assign to the user uploading it
         },
       });
     }
@@ -141,6 +149,7 @@ async function processSingleResume(file: Express.Multer.File): Promise<{
     await axios.post(`${AI_SERVICE_URL}/build-candidate-index`, {
       candidateId: candidate.id,
       profile: profileResult.profile,
+      organizationId,
     });
 
     // 6. Mark pipeline complete
@@ -187,6 +196,7 @@ async function processSingleResume(file: Express.Multer.File): Promise<{
    ───────────────────────────────────────────────────────────── */
 export async function uploadResumes(req: Request, res: Response) {
   const files = req.files as Express.Multer.File[] | undefined;
+  const user = (req as any).user;
 
   if (!files || files.length === 0) {
     return res.status(400).json({
@@ -203,7 +213,7 @@ export async function uploadResumes(req: Request, res: Response) {
   }
 
   const settled = await Promise.allSettled(
-    files.map((file) => processSingleResume(file))
+    files.map((file) => processSingleResume(file, user.organizationId, user.id))
   );
 
   const results = settled.map((outcome) => {

@@ -1,22 +1,37 @@
 import jwt from "jsonwebtoken";
 import { env } from "../config/env.js";
-import type { Role } from "@prisma/client";
 
 export interface JwtPayload {
   sub: string;
+  name: string | null;
   email: string;
-  role: Role;
+  role: { id: string; name: string };
+  permissions: string[];
+  organizationId: string | null;
+  teamId: string | null;
 }
 
 /**
- * Sign a JWT token containing user id, email, and role.
+ * Sign a JWT token containing user id, email, role, and permissions.
  * Expires in env.jwtExpiresIn (default: 7d).
  */
-export function signToken(user: { id: string; email: string; role: Role }): string {
+export function signToken(user: { 
+  id: string; 
+  name: string | null; 
+  email: string; 
+  role: { id: string; name: string }; 
+  permissions: string[]; 
+  organizationId: string | null; 
+  teamId: string | null; 
+}): string {
   const payload: JwtPayload = {
     sub: user.id,
+    name: user.name,
     email: user.email,
     role: user.role,
+    permissions: user.permissions,
+    organizationId: user.organizationId,
+    teamId: user.teamId,
   };
 
   return jwt.sign(payload, env.jwtSecret, {

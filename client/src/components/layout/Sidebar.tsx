@@ -1,4 +1,4 @@
-import type { Page, Role } from "../../types";
+import type { Page } from "../../types";
 import { useAuth } from "../../context/AuthContext";
 
 interface SidebarProps {
@@ -6,22 +6,10 @@ interface SidebarProps {
   onNavigate: (page: Page) => void;
 }
 
-const ROLE_BADGE_CLASS: Record<Role, string> = {
-  ADMIN: "role-badge role-badge--admin",
-  RECRUITER: "role-badge role-badge--recruiter",
-  INTERVIEWER: "role-badge role-badge--interviewer",
-};
-
-const ROLE_LABEL: Record<Role, string> = {
-  ADMIN: "Admin",
-  RECRUITER: "Recruiter",
-  INTERVIEWER: "Interviewer",
-};
-
 export function Sidebar({ activePage, onNavigate }: SidebarProps) {
   const { user, logout } = useAuth();
 
-  const canUpload = user?.role === "RECRUITER" || user?.role === "ADMIN";
+  const isAdmin = user?.role?.name === "ADMIN";
 
   return (
     <aside className="sidebar" id="sidebar">
@@ -36,30 +24,20 @@ export function Sidebar({ activePage, onNavigate }: SidebarProps) {
       </div>
 
       <nav className="sidebar-nav" aria-label="Main navigation">
-        <span className="nav-label">Core Pipeline</span>
-
-        {/* Upload — RECRUITER and ADMIN only */}
-        {canUpload && (
-          <button
-            id="nav-upload"
-            className={`nav-item${activePage === "upload" ? " active" : ""}`}
-            onClick={() => onNavigate("upload")}
-            aria-current={activePage === "upload" ? "page" : undefined}
-          >
-            <span className="nav-icon">📄</span>
-            <span className="nav-text">Upload Resume</span>
-          </button>
-        )}
-
+        {/* ── Dashboard (both roles) ── */}
+        <span className="nav-label">Overview</span>
         <button
-          id="nav-search"
-          className={`nav-item${activePage === "search" ? " active" : ""}`}
-          onClick={() => onNavigate("search")}
-          aria-current={activePage === "search" ? "page" : undefined}
+          id="nav-dashboard"
+          className={`nav-item${activePage === "dashboard" ? " active" : ""}`}
+          onClick={() => onNavigate("dashboard")}
+          aria-current={activePage === "dashboard" ? "page" : undefined}
         >
-          <span className="nav-icon">🔍</span>
-          <span className="nav-text">Search Candidates</span>
+          <span className="nav-icon">📊</span>
+          <span className="nav-text">Dashboard</span>
         </button>
+
+        {/* ── Core Pipeline (both roles) ── */}
+        <span className="nav-label" style={{ marginTop: "1.5rem" }}>Pipeline</span>
 
         <button
           id="nav-list"
@@ -68,8 +46,72 @@ export function Sidebar({ activePage, onNavigate }: SidebarProps) {
           aria-current={activePage === "list" ? "page" : undefined}
         >
           <span className="nav-icon">👥</span>
-          <span className="nav-text">All Candidates</span>
+          <span className="nav-text">{isAdmin ? "All Candidates" : "My Candidates"}</span>
         </button>
+
+        <button
+          id="nav-upload"
+          className={`nav-item${activePage === "upload" ? " active" : ""}`}
+          onClick={() => onNavigate("upload")}
+          aria-current={activePage === "upload" ? "page" : undefined}
+        >
+          <span className="nav-icon">📄</span>
+          <span className="nav-text">Upload Resume</span>
+        </button>
+
+        <button
+          id="nav-search"
+          className={`nav-item${activePage === "search" ? " active" : ""}`}
+          onClick={() => onNavigate("search")}
+          aria-current={activePage === "search" ? "page" : undefined}
+        >
+          <span className="nav-icon">🔍</span>
+          <span className="nav-text">Search</span>
+        </button>
+
+        {/* ── Admin-only Management ── */}
+        {isAdmin && (
+          <>
+            <span className="nav-label" style={{ marginTop: "1.5rem" }}>Management</span>
+
+            <button
+              id="nav-teams"
+              className={`nav-item${activePage === "teams" ? " active" : ""}`}
+              onClick={() => onNavigate("teams")}
+              aria-current={activePage === "teams" ? "page" : undefined}
+            >
+              <span className="nav-icon">🛡️</span>
+              <span className="nav-text">Teams</span>
+            </button>
+          </>
+        )}
+
+        {(isAdmin || user?.role?.name === "TEAM_MANAGER") && (
+          <>
+            {!isAdmin && (
+               <span className="nav-label" style={{ marginTop: "1.5rem" }}>My Team</span>
+            )}
+            <button
+              id="nav-users"
+              className={`nav-item${activePage === "users" ? " active" : ""}`}
+              onClick={() => onNavigate("users")}
+              aria-current={activePage === "users" ? "page" : undefined}
+            >
+              <span className="nav-icon">🧑‍💼</span>
+              <span className="nav-text">{isAdmin ? "Managers" : "Members"}</span>
+            </button>
+
+            <button
+              id="nav-create-user"
+              className={`nav-item${activePage === "create-user" ? " active" : ""}`}
+              onClick={() => onNavigate("create-user")}
+              aria-current={activePage === "create-user" ? "page" : undefined}
+            >
+              <span className="nav-icon">➕</span>
+              <span className="nav-text">{isAdmin ? "Create User" : "Add Member"}</span>
+            </button>
+          </>
+        )}
       </nav>
 
       {/* User profile section */}
@@ -77,14 +119,14 @@ export function Sidebar({ activePage, onNavigate }: SidebarProps) {
         <div className="sidebar-user">
           <div className="sidebar-user-info">
             <div className="sidebar-avatar">
-              {user.email[0].toUpperCase()}
+              {(user.name || user.email)[0].toUpperCase()}
             </div>
             <div className="sidebar-user-details">
               <span className="sidebar-user-email" title={user.email}>
-                {user.email}
+                {user.name || user.email}
               </span>
-              <span className={ROLE_BADGE_CLASS[user.role]}>
-                {ROLE_LABEL[user.role]}
+              <span className="role-badge">
+                {user.role?.name ? user.role.name.replace("_", " ") : "Unknown Role"}
               </span>
             </div>
           </div>
