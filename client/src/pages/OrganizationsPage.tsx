@@ -72,12 +72,12 @@ export function OrganizationsPage() {
             <div className="search-controls" style={{ display: "flex", gap: "16px", alignItems: "center" }}>
               <input
                 type="text"
-                className="search-textarea"
+                className="login-input"
                 placeholder="Organization Name"
                 value={newOrgName}
                 onChange={(e) => setNewOrgName(e.target.value)}
                 disabled={isCreating}
-                style={{ flex: 1, minHeight: "44px", height: "44px", padding: "0 16px" }}
+                style={{ flex: 1 }}
               />
               <button type="submit" className="search-btn" disabled={isCreating || !newOrgName.trim()}>
                 {isCreating ? (

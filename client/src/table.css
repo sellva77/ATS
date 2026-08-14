@@ -5,7 +5,9 @@
   overflow-x: auto;
   border-radius: var(--radius-lg);
   border: 1px solid var(--border);
-  background: var(--bg-surface);
+  background: var(--bg-card);
+  backdrop-filter: blur(16px);
+  box-shadow: var(--shadow-md);
   animation: slideUp var(--duration-slow) var(--ease-out);
 }
 
@@ -18,16 +20,27 @@
 
 .data-table th,
 .data-table td {
-  padding: 14px 16px;
+  padding: 14px 18px;
   border-bottom: 1px solid var(--border);
+  color: var(--text-primary);
 }
 
-/* Sticky last column (delete button) */
+/* Sticky first column (Role Name / Employee Name) */
+.data-table th:first-child,
+.data-table td:first-child {
+  position: sticky;
+  left: 0;
+  background: var(--bg-card);
+  box-shadow: 4px 0 12px rgba(0, 0, 0, 0.05);
+  z-index: 2;
+}
+
+/* Sticky last column (actions) */
 .data-table th:last-child,
 .data-table td:last-child {
   position: sticky;
   right: 0;
-  background: var(--bg-surface);
+  background: var(--bg-card);
   box-shadow: -4px 0 12px rgba(0, 0, 0, 0.05);
   z-index: 2;
 }
@@ -36,9 +49,9 @@
   background: rgba(0, 0, 0, 0.02);
   font-size: 0.75rem;
   font-weight: 600;
-  color: var(--text-muted);
+  color: var(--text-secondary);
   text-transform: uppercase;
-  letter-spacing: 0.05em;
+  letter-spacing: 0.06em;
 }
 
 .data-table th:last-child {
@@ -57,8 +70,9 @@
   background: var(--bg-glass-hover);
 }
 
+.data-table tbody tr:hover td:first-child,
 .data-table tbody tr:hover td:last-child {
-  background: var(--bg-surface-hover);
+  background: var(--bg-glass-hover);
 }
 
 /* ── Typography Utilities ── */

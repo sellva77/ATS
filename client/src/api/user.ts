@@ -43,19 +43,46 @@ export async function deleteUser(id: string): Promise<void> {
 
 export async function createUser(data: {
   email: string;
-  password: string;
+  password?: string;
   name?: string;
   phone?: string;
-  role?: string;
+  role: string;
+  employeeCode?: string;
+  contactNumber?: string;
+  department?: string;
+  reportingPersonId?: string;
 }): Promise<User> {
   const body: any = {
     email: data.email,
-    password: data.password,
-    role: data.role || "TEAM_MANAGER",
+    role: data.role,
   };
+  if (data.password) body.password = data.password;
   if (data.name) body.name = data.name;
   if (data.phone) body.phone = data.phone;
+  if (data.employeeCode) body.employeeCode = data.employeeCode;
+  if (data.contactNumber) body.contactNumber = data.contactNumber;
+  if (data.department) body.department = data.department;
+  if (data.reportingPersonId) body.reportingPersonId = data.reportingPersonId;
 
   const res = await request<{ success: boolean; data: User }>(`${BASE}/invite`, "POST", body);
   return res.data;
+}
+
+export interface UpdateUserPayload extends Omit<Partial<User>, "role"> {
+  role?: string;
+}
+
+export async function updateUser(id: string, data: UpdateUserPayload): Promise<User> {
+  const res = await request<{ success: boolean; data: User }>(`${BASE}/${id}`, "PATCH", data);
+  return res.data;
+}
+
+export async function getHierarchy(id: string): Promise<User[]> {
+  const data = await request<{ success: boolean; data: User[] }>(`${BASE}/${id}/hierarchy`, "GET");
+  return data.data;
+}
+
+export async function getSubordinates(id: string): Promise<User[]> {
+  const data = await request<{ success: boolean; data: User[] }>(`${BASE}/${id}/subordinates`, "GET");
+  return data.data;
 }

@@ -1,15 +1,76 @@
-import type { Page } from "../../types";
+import { NavLink } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
+import {
+  LayoutDashboard,
+  ClipboardList,
+  Briefcase,
+  Users,
+  Upload,
+  Search,
+  TrendingUp,
+  Building2,
+  Network,
+  User,
+  Shield,
+  Building
+} from "lucide-react";
 
-interface SidebarProps {
-  activePage: Page;
-  onNavigate: (page: Page) => void;
-}
+export function Sidebar() {
+  const { user, logout, hasPermission } = useAuth();
 
-export function Sidebar({ activePage, onNavigate }: SidebarProps) {
-  const { user, logout } = useAuth();
+  if (!user) return null;
 
-  const isAdmin = user?.role?.name === "ADMIN";
+  // Build nav items dynamically based on permissions
+  const navItems = [];
+  
+  if (hasPermission("dashboard:view")) {
+    navItems.push({ id: "dashboard", icon: LayoutDashboard, label: "Dashboard" });
+  }
+
+  if (hasPermission("requirement:view")) {
+    navItems.push({ id: "requirements", icon: ClipboardList, label: "Requirements" });
+  }
+
+  if (hasPermission("application:view")) {
+    navItems.push({ id: "applications", icon: Briefcase, label: "Applications" });
+  }
+
+  if (hasPermission("candidate:view")) {
+    navItems.push({ id: "list", icon: Users, label: "Candidates" });
+  }
+
+  if (hasPermission("resume:upload")) {
+    navItems.push({ id: "upload", icon: Upload, label: "Upload Resumes" });
+  }
+
+  if (hasPermission("candidate:view")) { // Or search specific permission
+    navItems.push({ id: "search", icon: Search, label: "Search" });
+  }
+
+  if (hasPermission("report:view")) {
+    navItems.push({ id: "reports", icon: TrendingUp, label: "Reports" });
+  }
+
+  if (hasPermission("account:view")) {
+    navItems.push({ id: "accounts", icon: Building2, label: "Accounts" });
+  }
+
+  if (hasPermission("team:view")) {
+    navItems.push({ id: "teams", icon: Network, label: "Teams" });
+  }
+
+  if (hasPermission("user:view")) {
+    navItems.push({ id: "users", icon: User, label: "Users" });
+  }
+  
+  if (hasPermission("role:manage")) {
+    navItems.push({ id: "roles", icon: Shield, label: "Role Master" });
+  }
+
+  // Organizations is Admin only
+  if (!user.organizationId && hasPermission("organization:view")) {
+    navItems.push({ id: "organizations", icon: Building, label: "Organizations" });
+  }
 
   return (
     <aside className="sidebar" id="sidebar">
@@ -24,94 +85,22 @@ export function Sidebar({ activePage, onNavigate }: SidebarProps) {
       </div>
 
       <nav className="sidebar-nav" aria-label="Main navigation">
-        {/* ── Dashboard (both roles) ── */}
-        <span className="nav-label">Overview</span>
-        <button
-          id="nav-dashboard"
-          className={`nav-item${activePage === "dashboard" ? " active" : ""}`}
-          onClick={() => onNavigate("dashboard")}
-          aria-current={activePage === "dashboard" ? "page" : undefined}
-        >
-          <span className="nav-icon">📊</span>
-          <span className="nav-text">Dashboard</span>
-        </button>
-
-        {/* ── Core Pipeline (both roles) ── */}
-        <span className="nav-label" style={{ marginTop: "1.5rem" }}>Pipeline</span>
-
-        <button
-          id="nav-list"
-          className={`nav-item${activePage === "list" ? " active" : ""}`}
-          onClick={() => onNavigate("list")}
-          aria-current={activePage === "list" ? "page" : undefined}
-        >
-          <span className="nav-icon">👥</span>
-          <span className="nav-text">{isAdmin ? "All Candidates" : "My Candidates"}</span>
-        </button>
-
-        <button
-          id="nav-upload"
-          className={`nav-item${activePage === "upload" ? " active" : ""}`}
-          onClick={() => onNavigate("upload")}
-          aria-current={activePage === "upload" ? "page" : undefined}
-        >
-          <span className="nav-icon">📄</span>
-          <span className="nav-text">Upload Resume</span>
-        </button>
-
-        <button
-          id="nav-search"
-          className={`nav-item${activePage === "search" ? " active" : ""}`}
-          onClick={() => onNavigate("search")}
-          aria-current={activePage === "search" ? "page" : undefined}
-        >
-          <span className="nav-icon">🔍</span>
-          <span className="nav-text">Search</span>
-        </button>
-
-        {/* ── Admin-only Management ── */}
-        {isAdmin && (
-          <>
-            <span className="nav-label" style={{ marginTop: "1.5rem" }}>Management</span>
-
-            <button
-              id="nav-teams"
-              className={`nav-item${activePage === "teams" ? " active" : ""}`}
-              onClick={() => onNavigate("teams")}
-              aria-current={activePage === "teams" ? "page" : undefined}
+        {navItems.map((item) => {
+          const Icon = item.icon;
+          return (
+            <NavLink
+              key={item.id}
+              to={item.id === "dashboard" ? "/" : `/${item.id}`}
+              className={({ isActive }) => `nav-item${isActive ? " active" : ""}`}
+              end={item.id === "dashboard"}
             >
-              <span className="nav-icon">🛡️</span>
-              <span className="nav-text">Teams</span>
-            </button>
-          </>
-        )}
-
-        {(isAdmin || user?.role?.name === "TEAM_MANAGER") && (
-          <>
-            {!isAdmin && (
-               <span className="nav-label" style={{ marginTop: "1.5rem" }}>My Team</span>
-            )}
-            <button
-              id="nav-users"
-              className={`nav-item${activePage === "users" ? " active" : ""}`}
-              onClick={() => onNavigate("users")}
-              aria-current={activePage === "users" ? "page" : undefined}
-            >
-              <span className="nav-icon">🧑‍💼</span>
-              <span className="nav-text">{isAdmin ? "Managers" : "Members"}</span>
-            </button>
-
-            <button
-              id="nav-create-user"
-              className={`nav-item${activePage === "create-user" ? " active" : ""}`}
-              onClick={() => onNavigate("create-user")}
-              aria-current={activePage === "create-user" ? "page" : undefined}
-            >
-              <span className="nav-icon">➕</span>
-              <span className="nav-text">{isAdmin ? "Create User" : "Add Member"}</span>
-            </button>
-          </>
-        )}
+              <span className="nav-icon">
+                <Icon size={16} strokeWidth={2.5} />
+              </span>
+              <span className="nav-text">{item.label}</span>
+            </NavLink>
+          );
+        })}
       </nav>
 
       {/* User profile section */}
@@ -125,7 +114,7 @@ export function Sidebar({ activePage, onNavigate }: SidebarProps) {
               <span className="sidebar-user-email" title={user.email}>
                 {user.name || user.email}
               </span>
-              <span className="role-badge">
+              <span className={`role-badge ${user.role?.name ? `role-badge--${user.role.name.toLowerCase()}` : ""}`}>
                 {user.role?.name ? user.role.name.replace("_", " ") : "Unknown Role"}
               </span>
             </div>

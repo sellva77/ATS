@@ -1,4 +1,5 @@
-import { useState } from "react";
+// import { useState } from "react";
+import { Routes, Route, Navigate } from "react-router-dom";
 import { AuthProvider, useAuth } from "./context/AuthContext";
 import { Sidebar } from "./components/layout/Sidebar";
 import { ToastContainer } from "./components/common/Toast";
@@ -10,16 +11,20 @@ import { TeamsPage } from "./pages/TeamsPage";
 import { UsersPage } from "./pages/UsersPage";
 import { CreateUserPage } from "./pages/CreateUserPage";
 import { LoginPage } from "./pages/LoginPage";
+import { AccountsPage } from "./pages/AccountsPage";
+import { RequirementsPage } from "./pages/RequirementsPage";
+import { RequirementDetailPage } from "./pages/RequirementDetailPage";
+import { ReportsPage } from "./pages/ReportsPage";
+import { OrganizationsPage } from "./pages/OrganizationsPage";
+import { RoleMasterPage } from "./pages/RoleMasterPage";
+import { ApplicationsPage } from "./pages/ApplicationsPage";
 import { ProtectedRoute } from "./components/auth/ProtectedRoute";
-import type { Page } from "./types";
+import ErrorBoundary from "./components/common/ErrorBoundary"; // Force TS re-evaluation
 import "./App.css";
 
-/* ── Inner app — rendered only when auth state is resolved ── */
 function AppInner() {
   const { user, isLoading } = useAuth();
-  const [activePage, setActivePage] = useState<Page>("dashboard");
 
-  // Show a full-screen spinner while validating the stored token
   if (isLoading) {
     return (
       <div className="auth-loading">
@@ -28,12 +33,10 @@ function AppInner() {
     );
   }
 
-  // Unauthenticated — show login page
   if (!user) {
     return <LoginPage />;
   }
 
-  // Authenticated — show main app
   return (
     <div className="app-layout">
       <div className="aurora-bg">
@@ -41,36 +44,119 @@ function AppInner() {
         <div className="aurora-orb aurora-orb-2" />
       </div>
 
-      <Sidebar activePage={activePage} onNavigate={setActivePage} />
+      <Sidebar />
 
-      <main className="main-content" key={activePage}>
-        {activePage === "dashboard" && (
-          <DashboardPage />
-        )}
-        {activePage === "upload" && (
-          <UploadPage />
-        )}
-        {activePage === "search" && (
-          <SearchPage />
-        )}
-        {activePage === "list" && (
-          <ListPage />
-        )}
-        {activePage === "teams" && (
-          <ProtectedRoute roles={["ADMIN"]}>
-            <TeamsPage />
-          </ProtectedRoute>
-        )}
-        {activePage === "users" && (
-          <ProtectedRoute roles={["ADMIN", "TEAM_MANAGER"]}>
-            <UsersPage />
-          </ProtectedRoute>
-        )}
-        {activePage === "create-user" && (
-          <ProtectedRoute roles={["ADMIN", "TEAM_MANAGER"]}>
-            <CreateUserPage />
-          </ProtectedRoute>
-        )}
+      <main className="main-content">
+        <ErrorBoundary>
+          <Routes>
+            <Route path="/" element={<DashboardPage />} />
+            <Route
+              path="requirements/:id"
+              element={
+                <ProtectedRoute permissions={["requirement:view"]}>
+                  <RequirementDetailPage />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="requirements"
+              element={
+                <ProtectedRoute permissions={["requirement:view"]}>
+                  <RequirementsPage />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="accounts"
+              element={
+                <ProtectedRoute permissions={["account:view"]}>
+                  <AccountsPage />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="applications"
+              element={
+                <ProtectedRoute permissions={["application:view"]}>
+                  <ApplicationsPage />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="search"
+              element={
+                <ProtectedRoute permissions={["candidate:view"]}>
+                  <SearchPage />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="list"
+              element={
+                <ProtectedRoute permissions={["candidate:view"]}>
+                  <ListPage />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="upload"
+              element={
+                <ProtectedRoute permissions={["resume:upload"]}>
+                  <UploadPage />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="organizations"
+              element={
+                <ProtectedRoute permissions={["organization:view"]}>
+                  <OrganizationsPage />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="teams"
+              element={
+                <ProtectedRoute permissions={["team:view"]}>
+                  <TeamsPage />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="users"
+              element={
+                <ProtectedRoute permissions={["user:view"]}>
+                  <UsersPage />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="users/new"
+              element={
+                <ProtectedRoute permissions={["user:create"]}>
+                  <CreateUserPage />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="reports"
+              element={
+                <ProtectedRoute permissions={["report:view"]}>
+                  <ReportsPage />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="roles"
+              element={
+                <ProtectedRoute permissions={["role:manage"]}>
+                  <RoleMasterPage />
+                </ProtectedRoute>
+              }
+            />
+            <Route path="*" element={<Navigate to="/" replace />} />
+          </Routes>
+        </ErrorBoundary>
       </main>
 
       <ToastContainer />
@@ -78,7 +164,6 @@ function AppInner() {
   );
 }
 
-/* ── Root — wraps everything in AuthProvider ─────────────── */
 function App() {
   return (
     <AuthProvider>

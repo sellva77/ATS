@@ -1,12 +1,17 @@
 import express from "express";
 import cors from "cors";
-import authRoutes from "./auth/auth.routes.js";
-import candidateRoutes from "./candidate/candidate.routes.js";
-import resumeRoutes from "./resume/resume.routes.js";
-import organizationRoutes from "./organization/organization.routes.js";
-import teamsRoutes from "./teams/teams.routes.js";
-import usersRoutes from "./users/users.routes.js";
-import dashboardRoutes from "./dashboard/dashboard.routes.js";
+import authRoutes from "./routes/auth.routes.js";
+import candidateRoutes from "./routes/candidate.routes.js";
+import resumeRoutes from "./routes/resume.routes.js";
+import organizationRoutes from "./routes/organization.routes.js";
+import teamsRoutes from "./routes/teams.routes.js";
+import usersRoutes from "./routes/users.routes.js";
+import dashboardRoutes from "./routes/dashboard.routes.js";
+import accountRoutes from "./routes/account.routes.js";
+import requirementRoutes from "./routes/requirement.routes.js";
+import applicationRoutes from "./routes/application.routes.js";
+import reportsRoutes from "./routes/reports.routes.js";
+import roleRoutes from "./routes/role.routes.js";
 
 const app = express();
 
@@ -21,7 +26,12 @@ app.use("/api/v1/organizations", organizationRoutes);
 app.use("/api/v1/teams", teamsRoutes);
 app.use("/api/v1/users", usersRoutes);
 app.use("/api/v1/dashboard", dashboardRoutes);
+app.use("/api/v1/accounts", accountRoutes);
+app.use("/api/v1/requirements", requirementRoutes);
+app.use("/api/v1/applications", applicationRoutes);
 app.use("/api/v1", candidateRoutes);
 app.use("/api/v1", resumeRoutes);
+app.use("/api/v1", reportsRoutes);
+app.use("/api/v1/roles", roleRoutes);
 
 export default app;

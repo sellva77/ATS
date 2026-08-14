@@ -4,58 +4,134 @@ import bcrypt from "bcryptjs";
 const prisma = new PrismaClient();
 
 /* ─────────────────────────────────────────────────────────────
-   Simplified permission set for 2-role MVP
+   Full permission set — Standardized naming convention
    ───────────────────────────────────────────────────────────── */
 const PERMISSIONS = [
-  "organization:create", "organization:view", "organization:update", "organization:delete",
-  "team:create", "team:view", "team:update", "team:delete",
-  "user:create", "user:view", "user:update", "user:delete",
-  "candidate:create", "candidate:view", "candidate:update", "candidate:delete", "candidate:assign",
-  "resume:upload", "resume:download",
-  "search:candidate",
+  "organization:view", "organization:create", "organization:update", "organization:delete",
+  "team:view", "team:create", "team:update", "team:delete",
+  "user:view", "user:create", "user:update", "user:delete",
+  "candidate:view", "candidate:create", "candidate:update", "candidate:delete",
+  "resume:view", "resume:upload", "resume:download", "resume:delete",
+  "requirement:view", "requirement:create", "requirement:update", "requirement:delete",
+  "application:view", "application:create", "application:update", "application:delete",
+  "report:view", "report:export",
   "dashboard:view",
+  "account:view", "account:create", "account:update", "account:delete",
+  "role:manage",
 ];
 
 /* ─────────────────────────────────────────────────────────────
-   Only two roles: ADMIN and TEAM_MANAGER
+   Roles — Explicit permission matrix based on user feedback
    ───────────────────────────────────────────────────────────── */
 const ROLES = [
   {
     name: "ADMIN",
     description: "Platform administrator — full access",
-    permissions: PERMISSIONS,
+    permissions: PERMISSIONS, // Admin gets everything
   },
   {
     name: "TEAM_MANAGER",
-    description: "Team manager — manages own candidates",
+    description: "Team manager — manages own candidates (legacy)",
     permissions: [
-      "candidate:create", "candidate:view", "candidate:update", "candidate:delete",
-      "resume:upload", "resume:download",
-      "search:candidate",
+      "candidate:view", "candidate:create", "candidate:update", "candidate:delete",
+      "resume:view", "resume:upload", "resume:download",
       "dashboard:view",
       "team:view",
+      "user:view",
+      "account:view",
+      "requirement:view",
+      "application:view",
+      "report:view",
     ],
   },
   {
     name: "TEAM_MEMBER",
-    description: "Team member — works under a manager",
+    description: "Team member — works under a manager (legacy)",
     permissions: [
-      "candidate:create", "candidate:view", "candidate:update",
-      "resume:upload", "resume:download",
-      "search:candidate",
+      "candidate:view", "candidate:create", "candidate:update",
+      "resume:view", "resume:upload", "resume:download",
       "dashboard:view",
       "team:view",
+      "account:view",
+      "requirement:view",
+      "application:view",
+    ],
+  },
+  {
+    name: "RECRUITMENT_MANAGER",
+    description: "Manages recruiters, requirements, and accounts",
+    permissions: [
+      "candidate:view", "candidate:create", "candidate:update", "candidate:delete",
+      "resume:view", "resume:upload", "resume:download", "resume:delete",
+      "requirement:view", "requirement:create", "requirement:update",
+      "application:view", "application:create", "application:update",
+      "account:view", "account:create", "account:update",
+      "team:view",
+      "user:view",
+      "dashboard:view",
+      "report:view", "report:export",
+    ],
+  },
+  {
+    name: "RECRUITER",
+    description: "Handles day-to-day recruitment — sourcing, screening, scheduling",
+    permissions: [
+      "candidate:view", "candidate:create", "candidate:update",
+      "resume:view", "resume:upload", "resume:download",
+      "requirement:view", "requirement:update",
+      "application:view", "application:create", "application:update",
+      "account:view",
+      "team:view",
+      "dashboard:view",
+      "report:view",
+    ],
+  },
+  {
+    name: "ACCOUNT_MANAGER",
+    description: "Manages client accounts and relationships",
+    permissions: [
+      "account:view", "account:create", "account:update",
+      "requirement:view", "requirement:create", "requirement:update",
+      "candidate:view",
+      "application:view",
+      "dashboard:view",
+      "report:view",
+    ],
+  },
+  {
+    name: "HR",
+    description: "Handles post-selection onboarding and hiring",
+    permissions: [
+      "candidate:view",
+      "requirement:view",
+      "application:view", "application:update",
+      "dashboard:view",
+      "report:view",
+    ],
+  },
+  {
+    name: "REPORT_VIEWER",
+    description: "Read-only access to dashboards and reports",
+    permissions: [
+      "dashboard:view",
+      "report:view", "report:export",
+      "account:view",
+      "requirement:view",
+      "candidate:view",
+      "application:view",
     ],
   },
 ];
 
 /* ─────────────────────────────────────────────────────────────
-   Seed users — one ADMIN and one TEAM_MANAGER for dev
+   Seed users — dev accounts
    ───────────────────────────────────────────────────────────── */
 const SEED_USERS = [
   { email: "admin@ats.dev", password: "password", roleName: "ADMIN", name: "Admin" },
   { email: "manager@ats.dev", password: "password", roleName: "TEAM_MANAGER", name: "John Manager" },
   { email: "member@ats.dev", password: "password", roleName: "TEAM_MEMBER", name: "Jane Member" },
+  { email: "recruiter@ats.dev", password: "password", roleName: "RECRUITER", name: "Selva Recruiter" },
+  { email: "rm@ats.dev", password: "password", roleName: "RECRUITMENT_MANAGER", name: "Ravi RM" },
 ];
 
 async function main() {
@@ -153,7 +229,7 @@ async function main() {
       },
     });
 
-    console.log(`  ✓ ${role.name.padEnd(14)} → ${upserted.email}`);
+    console.log(`  ✓ ${role.name.padEnd(22)} → ${upserted.email}`);
   }
 
   console.log("✅ Seeding complete.");

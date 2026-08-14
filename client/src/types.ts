@@ -62,6 +62,7 @@ export interface CandidateResult {
   candidateExperienceYears?: number | null;
   requiredExperience?: ExperienceRange | null;
   assignedManagerId?: string | null;
+  assignedRecruiterId?: string | null;
 }
 
 export interface SearchResponse {
@@ -110,6 +111,11 @@ export interface ListCandidate {
     status: string;
     uploadedAt: string;
   };
+  createdBy?: {
+    id: string;
+    name: string | null;
+    email: string;
+  } | null;
 }
 
 export interface ListResponse {
@@ -120,7 +126,7 @@ export interface ListResponse {
 
 /* ── Navigation ── */
 
-export type Page = "dashboard" | "upload" | "search" | "list" | "organizations" | "teams" | "users" | "create-user";
+export type Page = "dashboard" | "upload" | "search" | "list" | "organizations" | "teams" | "users" | "create-user" | "accounts" | "requirements" | "requirement-detail" | "reports" | "roles";
 
 /* ── Toast ── */
 
@@ -139,10 +145,76 @@ export interface User {
   name: string | null;
   email: string;
   phone?: string | null;
+  employeeCode?: string | null;
+  contactNumber?: string | null;
+  department?: string | null;
+  status?: "ACTIVE" | "INACTIVE" | "SUSPENDED";
+  reportingPersonId?: string | null;
+  reportingPerson?: { id: string; name: string | null; email: string } | null;
   role: { id: string; name: string };
   permissions: string[];
   organizationId: string | null;
   teamId: string | null;
+}
+
+export interface Role {
+  id: string;
+  name: string;
+  description?: string | null;
+  organizationId?: string | null;
+  permissions: string[];
+  userCount: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface Permission {
+  id: string;
+  key: string;
+  description?: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface Account {
+  id: string;
+  displayName: string;
+  source?: string | null;
+  keyAccountPersonId?: string | null;
+  keyAccountPerson?: { id: string; name: string | null; email: string } | null;
+  contactPerson?: string | null;
+  contactEmail?: string | null;
+  contactNumber?: string | null;
+  address?: string | null;
+  status: "ACTIVE" | "INACTIVE" | "ON_HOLD";
+  remarks?: string | null;
+  createdAt: string;
+}
+
+export interface Requirement {
+  id: string;
+  requirementCode: string;
+  accountId: string;
+  account?: { id: string; displayName: string };
+  title: string;
+  jobDescription: string;
+  requiredSkills: string[];
+  preferredSkills: string[];
+  minExperience?: number | null;
+  maxExperience?: number | null;
+  location?: string | null;
+  numberOfOpenings: number;
+  priority: "LOW" | "MEDIUM" | "HIGH" | "URGENT";
+  status: "OPEN" | "ON_HOLD" | "CLOSED" | "CANCELLED";
+  assignedManagerId?: string | null;
+  assignedManager?: { id: string; name: string | null; email: string } | null;
+  assignedRecruiterId?: string | null;
+  assignedRecruiter?: { id: string; name: string | null; email: string } | null;
+  openDate: string;
+  targetDate?: string | null;
+  closedDate?: string | null;
+  remarks?: string | null;
+  createdAt: string;
 }
 
 export interface LoginResponse {
@@ -159,10 +231,13 @@ export interface MeResponse {
 /* ── Dashboard ── */
 
 export interface DashboardSummary {
+  activeAccounts: number;
+  activeRequirements: number;
+  openPositions: number;
+  totalCandidates: number;
+  funnelBreakdown: Record<string, number>;
   totalManagers?: number;
   totalTeams?: number;
-  totalCandidates: number;
-  statusBreakdown: Record<string, number>;
 }
 
 export interface ManagerStats {
@@ -188,11 +263,10 @@ export interface TeamStats {
 
 export interface ActivityItem {
   id: string;
-  candidateName: string;
-  resumeName: string | null;
-  status: CandidateStatus;
-  createdBy: string | null;
-  assignedManager: string | null;
+  action: string;
+  entityType: string;
+  entityId: string;
+  details: any;
+  performedBy: string;
   createdAt: string;
-  updatedAt: string;
 }

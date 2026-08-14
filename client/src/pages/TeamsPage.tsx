@@ -77,12 +77,11 @@ export function TeamsPage() {
           <div className="search-controls" style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
             <input
               type="text"
-              className="search-textarea"
+              className="login-input"
               placeholder="Enter team name"
               value={newTeamName}
               onChange={(e) => setNewTeamName(e.target.value)}
               disabled={isCreating}
-              style={{ width: "100%", minHeight: "44px", height: "44px", padding: "0 16px" }}
               autoFocus
             />
             <div style={{ display: "flex", justifyContent: "flex-end", gap: "12px", marginTop: "8px" }}>
